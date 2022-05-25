@@ -1,0 +1,34 @@
+plugins {
+    id("java")
+    id("org.jetbrains.kotlin.jvm") version "1.6.20"
+    id("org.jetbrains.intellij") version "1.5.2"
+}
+
+group = "com.xhlab"
+version = "0.1"
+
+repositories {
+    mavenCentral()
+}
+
+intellij {
+    type = "IU"
+    version = "2022.1"
+}
+
+patchPluginXml {
+    sinceBuild = "221"
+    untilBuild = "222.*"
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "11"
+}
+
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "11"
+}
+
+runIde {
+    jvmArgs = ["-Xmx2G"]
+}

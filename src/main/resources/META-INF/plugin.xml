@@ -1,0 +1,16 @@
+<idea-plugin>
+    <id>com.xhlab.yafc</id>
+    <name>YAFC</name>
+    <vendor email="inganlegi@gmail.com" url="https://github.com/wlghdu97/intellij-yafc">inganlegi</vendor>
+
+    <description><![CDATA[
+    Editor plugin for YAFC.<br>
+    <em>There's no description for now</em>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationService serviceImplementation="com.xhlab.yafc.TestApplicationService"/>
+    </extensions>
+</idea-plugin>
