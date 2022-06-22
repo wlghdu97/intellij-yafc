@@ -11,6 +11,10 @@ repositories {
     mavenCentral()
 }
 
+dependencies {
+    implementation "org.luaj:luaj-jse:3.0.1"
+}
+
 intellij {
     type = "IU"
     version = "2022.1"
