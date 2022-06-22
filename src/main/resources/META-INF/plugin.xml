@@ -12,5 +12,29 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <applicationService serviceImplementation="com.xhlab.yafc.TestApplicationService"/>
+        <!-- Module -->
+        <moduleType id="YAFC_MODULE" implementationClass="com.xhlab.yafc.ide.module.YAFCModuleType"/>
+        <moduleBuilder builderClass="com.xhlab.yafc.ide.module.YAFCModuleBuilder"/>
+
+        <!-- File Type Factory -->
+        <fileType
+                name="YAFC File"
+                implementationClass="com.xhlab.yafc.lang.YAFCFileType"
+                fieldName="INSTANCE"
+                language="YAFC"
+                extensions="yafc"/>
+
+        <!-- Parser -->
+        <lang.parserDefinition language="YAFC" implementationClass="com.xhlab.yafc.lang.YAFCParserDefinition"/>
+
+        <!-- Syntax Highlighter -->
+        <lang.syntaxHighlighterFactory
+                language="YAFC"
+                implementationClass="com.intellij.json.highlighting.JsonSyntaxHighlighterFactory"/>
+
+        <!-- Folding -->
+        <lang.foldingBuilder
+                language="YAFC"
+                implementationClass="com.intellij.json.editor.folding.JsonFoldingBuilder"/>
     </extensions>
 </idea-plugin>
