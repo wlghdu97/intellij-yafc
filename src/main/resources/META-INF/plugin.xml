@@ -11,7 +11,6 @@
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <applicationService serviceImplementation="com.xhlab.yafc.TestApplicationService"/>
         <!-- Module -->
         <moduleType id="YAFC_MODULE" implementationClass="com.xhlab.yafc.ide.module.YAFCModuleType"/>
         <moduleBuilder builderClass="com.xhlab.yafc.ide.module.YAFCModuleBuilder"/>
