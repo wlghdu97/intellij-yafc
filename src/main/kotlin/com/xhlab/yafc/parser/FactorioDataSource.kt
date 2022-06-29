@@ -8,7 +8,6 @@ import com.intellij.openapi.project.Project
 import com.twelvemonkeys.io.LittleEndianDataInputStream
 import com.xhlab.yafc.model.Version
 import com.xhlab.yafc.model.data.DataUtils
-import com.xhlab.yafc.parser.ParserProgressChangeListener.Companion.TOPIC_PARSER_PROGRESS_CHANGE
 import org.luaj.vm2.LuaValue
 import java.io.File
 import java.io.FileInputStream
@@ -16,13 +15,15 @@ import java.io.Reader
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
-class FactorioDataSource constructor(project: Project) : Disposable {
+
+class FactorioDataSource {
 
     private val allMods = hashMapOf<String, ModInfo?>()
-
-    private val messageBus = project.messageBus
-    private val connection = messageBus.connect()
     private val gson = Gson()
+
+    private val logger = Logger.getInstance(FactorioDataSource::class.java)
+
+    var progressListener: ParserProgressChangeListener? = null
 
     fun resolveModPath(currentMod: String, fullPath: String, isLuaRequire: Boolean = false): Pair<String, String> {
         val splitters = if (isLuaRequire && !fullPath.contains("/")) fileSplittersLua else fileSplittersNormal
@@ -329,15 +330,11 @@ class FactorioDataSource constructor(project: Project) : Disposable {
     }
 
     private fun sendProgressUpdate(title: String, description: String) {
-        messageBus.syncPublisher(TOPIC_PARSER_PROGRESS_CHANGE).progressChanged(title, description)
+        progressListener?.progressChanged(title, description)
     }
 
     fun sendCurrentLoadingModChange(mod: String?) {
-        messageBus.syncPublisher(TOPIC_PARSER_PROGRESS_CHANGE).currentLoadingModChanged(mod)
-    }
-
-    override fun dispose() {
-        connection.disconnect()
+        progressListener?.currentLoadingModChanged(mod)
     }
 
     internal data class ModEntry(
@@ -455,7 +452,5 @@ class FactorioDataSource constructor(project: Project) : Disposable {
 
         private val defaultDependencies = listOf("base")
         private val dependencyRegex = Regex("^\\(?([?!~]?)\\)?\\s*([\\w- ]+?)(?:\\s*[><=]+\\s*[\\d.]*)?\\s*$")
-
-        private val logger = Logger.getInstance(FactorioDataSource::class.java)
     }
 }
