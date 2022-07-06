@@ -12,14 +12,14 @@ object FactorioLocalization {
         while (reader.ready()) {
             val line = reader.readLine()?.trim() ?: return
             if (line.startsWith("[") && line.endsWith("]")) {
-                category = line.substring(1, line.length - 2)
+                category = line.substring(1, line.length - 1)
             } else {
                 val idx = line.indexOf('=')
                 if (idx == -1) {
                     continue
                 }
                 val key = line.substring(0, idx)
-                val value = line.substring(idx + 1, line.length - idx - 1)
+                val value = line.substring(idx + 1, line.length)
                 val fullKey = "$category.$key"
                 if (!keys.containsKey(fullKey)) {
                     keys[fullKey] = cleanupTags(value)
@@ -33,14 +33,14 @@ object FactorioLocalization {
         while (true) {
             val tagStart = src.indexOf('[')
             if (tagStart == -1) {
-                return src
+                return src.trim()
             }
             val tagEnd = src.indexOf(']', tagStart)
             if (tagEnd == -1) {
-                return src
+                return src.trim()
             }
 
-            src = src.removeRange(tagStart, tagEnd - tagStart + 1)
+            src = src.removeRange(tagStart, tagEnd + 1)
         }
     }
 
