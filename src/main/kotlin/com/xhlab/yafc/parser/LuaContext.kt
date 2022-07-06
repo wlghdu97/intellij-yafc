@@ -120,16 +120,16 @@ class LuaContext constructor(
             val fileExt = "$file.lua"
 
             val loading = packages["loading"] as LuaTable
-            if (loading[origFile]?.toboolean() == true) {
+            if (loading[fileExt]?.toboolean() == true) {
                 return LuaValue.NONE
             }
 
-            val loadedFile = (packages["loaded"] as LuaTable)[origFile]
+            val loadedFile = (packages["loaded"] as LuaTable)[fileExt]
             if (loadedFile != null && loadedFile != LuaValue.NIL) {
                 return loadedFile
             }
 
-            loading[origFile] = LuaValue.valueOf(true)
+            loading[fileExt] = LuaValue.valueOf(true)
 
             val loadingModName = loadingMod.lastOrNull()
 
@@ -145,20 +145,27 @@ class LuaContext constructor(
                     loadingModName to fileExt
                 }
 
-                // TODO: add mod-fix support
-                val module = doModFile(actualModName, fileName)
-                if (module != LuaValue.NIL) {
-                    (packages["loaded"] as LuaTable)[origFile] = module
-                    logger.info("Loaded local module : $file")
-                    module
-                } else if (fileExt.split('/').isEmpty()) {
-                    requireGlobal(origFile)
+                val modFileExt = "$actualModName:$fileExt"
+                val loadedModFile = (packages["loaded"] as LuaTable)[modFileExt]
+                if (loadedModFile != null && loadedModFile != LuaValue.NIL) {
+                    logger.info("Loaded mod local module : $actualModName : $file")
+                    loadedModFile
                 } else {
-                    LuaValue.NIL
+                    // TODO: add mod-fix support
+                    val module = doModFile(actualModName, fileName)
+                    if (module != LuaValue.NIL) {
+                        (packages["loaded"] as LuaTable)[modFileExt] = module
+                        logger.info("Loaded local module : $file")
+                        module
+                    } else if (!fileExt.contains('/')) {
+                        requireGlobal(origFile)
+                    } else {
+                        LuaValue.NIL
+                    }
                 }
             }
 
-            loading[origFile] = LuaValue.valueOf(false)
+            loading[fileExt] = LuaValue.valueOf(false)
 
             return result
         }

@@ -313,15 +313,16 @@ class FactorioDataSource {
         val archive = info.zipArchive
         if (archive != null) {
             for (entry in archive.entries()) {
-                if (entry.name.lowercase().startsWith(prefix)) {
-                    modFiles.add(entry.name)
+                val entryLocalPath = entry.name.substringAfter('/')
+                if (entryLocalPath.lowercase().startsWith(prefix.lowercase())) {
+                    modFiles.add(entryLocalPath)
                 }
             }
         } else {
             val dirFrom = File(info.folder, prefix)
-            if (dirFrom.exists()) {
+            if (dirFrom.exists() && dirFrom.isDirectory) {
                 for (file in dirFrom.listFiles() ?: emptyArray()) {
-                    modFiles.add(file.parent)
+                    modFiles.add(prefix + File.separator + file.name)
                 }
             }
         }
