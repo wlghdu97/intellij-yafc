@@ -2,12 +2,12 @@ package com.xhlab.yafc.parser
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.project.Project
 import com.twelvemonkeys.io.LittleEndianDataInputStream
 import com.xhlab.yafc.model.Version
 import com.xhlab.yafc.model.data.DataUtils
+import com.xhlab.yafc.parser.data.deserializer.FactorioDataDeserializer
+import org.luaj.vm2.LuaTable
 import org.luaj.vm2.LuaValue
 import java.io.File
 import java.io.FileInputStream
@@ -15,6 +15,7 @@ import java.io.Reader
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
+typealias YAFCProject = com.xhlab.yafc.model.Project
 
 class FactorioDataSource {
 
@@ -134,7 +135,7 @@ class FactorioDataSource {
         expensive: Boolean,
         locale: String?,
         renderIcons: Boolean = true
-    ): Project {
+    ): YAFCProject {
         try {
             sendCurrentLoadingModChange(null)
 
@@ -292,12 +293,19 @@ class FactorioDataSource {
             dataContext.exec(postprocess, "Postprocess.lua")
             sendCurrentLoadingModChange(null)
 
-//            val deserializer = new FactorioDataDeserializer(expensive, factorioVersion ?? defaultFactorioVersion)
-//            val project = deserializer.LoadData(projectPath, dataContext.data, dataContext.defines["prototypes"] as LuaTable, _progress, errorCollector, renderIcons)
+            val deserializer = FactorioDataDeserializer(
+                projectPath = projectPath,
+                data = dataContext.data,
+                prototypes = dataContext.defines["prototypes"] as LuaTable,
+                renderIcons = renderIcons,
+                expensiveRecipes = expensive,
+                factorioVersion = factorioVersion ?: defaultFactorioVersion
+            )
+            val project = deserializer.loadData()
             logger.debug("Completed!")
             sendProgressUpdate("Completed!", "Done executing lua")
 
-            TODO("implement Project")
+            return project
         } finally {
             allMods.clear()
         }

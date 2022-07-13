@@ -24,6 +24,12 @@ class LuaContext constructor(
 
     private val logger = Logger.getInstance(LuaContext::class.java)
 
+    val data: LuaTable
+        get() = (globals["data"] as? LuaTable) ?: LuaTable.tableOf()
+
+    val defines: LuaTable
+        get() = (globals["defines"] as? LuaTable) ?: LuaTable.tableOf()
+
     init {
         registerApi("raw_log", Log())
 
@@ -64,10 +70,6 @@ class LuaContext constructor(
         setLuaPath("$factorioPath/core/lualib/?.lua")
 
         logger.info(globals.load("print(package.path)").call().tojstring())
-    }
-
-    fun getGlobal(name: String): LuaValue? {
-        return globals.get(name)
     }
 
     fun setGlobal(name: String, value: LuaValue) {
