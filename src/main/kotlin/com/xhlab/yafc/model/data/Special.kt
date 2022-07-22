@@ -8,19 +8,19 @@ data class Special(
     internal val power: Boolean,
     override val factorioType: String,
     override val name: String,
-    override val originalName: String? = null,
-    override val typeDotName: String? = null,
-    override var locName: String? = null,
-    override var locDescr: String? = null,
-    override var iconSpec: List<FactorioIconPart>? = null,
-    override val icon: Icon? = null,
-    override val id: FactorioId? = null,
-    override val specialType: FactorioObjectSpecialType? = null,
-    override val fuelValue: Float = 0f,
-    override val production: List<Recipe> = emptyList(),
-    override val usages: List<Recipe> = emptyList(),
-    override val miscSources: List<FactorioObject> = emptyList(),
-    override val fuelFor: List<Entity> = emptyList()
+    override val originalName: String,
+    override val typeDotName: String,
+    override val locName: String,
+    override val locDescr: String,
+    override val iconSpec: List<FactorioIconPart>,
+    override val icon: Icon,
+    override val id: FactorioId,
+    override val specialType: FactorioObjectSpecialType,
+    override val fuelValue: Float,
+    override val production: List<Recipe>,
+    override val usages: List<Recipe>,
+    override val miscSources: List<FactorioObject>,
+    override val fuelFor: List<Entity>
 ) : Goods() {
     override val isPower: Boolean = power
     override val type: String = if (isPower) "Power" else "Special"

@@ -4,7 +4,6 @@ import com.xhlab.yafc.model.analysis.IDependencyCollector
 import javax.swing.Icon
 
 abstract class FactorioObject : IFactorioObjectWrapper, Comparable<FactorioObject> {
-
     abstract val factorioType: String?
     abstract val name: String
     abstract val originalName: String? // name without temperature

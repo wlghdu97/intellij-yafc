@@ -4,27 +4,26 @@ import com.xhlab.yafc.model.data.entity.Entity
 import javax.swing.Icon
 
 data class Item(
-    val fuelResult: Item? = null,
-    var stackSize: Int = 0,
-    val placeResult: Entity? = null,
-    val module: ModuleSpecification? = null,
-    override val factorioType: String = "",
-    override val name: String = "",
-    override val originalName: String? = null,
-    override val typeDotName: String? = null,
-    override var locName: String? = null,
-    override var locDescr: String? = null,
-    override var iconSpec: List<FactorioIconPart>? = null,
-    override val icon: Icon? = null,
-    override val id: FactorioId? = null,
-    override val specialType: FactorioObjectSpecialType? = null,
-    override val fuelValue: Float = 0f,
-    override val production: List<Recipe> = emptyList(),
-    override val usages: List<Recipe> = emptyList(),
-    override val miscSources: List<FactorioObject> = emptyList(),
-    override val fuelFor: List<Entity> = emptyList(),
+    val fuelResult: Item?,
+    val stackSize: Int,
+    val placeResult: Entity?,
+    val module: ModuleSpecification?,
+    override val factorioType: String,
+    override val name: String,
+    override val originalName: String,
+    override val typeDotName: String,
+    override val locName: String,
+    override val locDescr: String,
+    override val iconSpec: List<FactorioIconPart>,
+    override val icon: Icon,
+    override val id: FactorioId,
+    override val specialType: FactorioObjectSpecialType,
+    override val fuelValue: Float,
+    override val production: List<Recipe>,
+    override val usages: List<Recipe>,
+    override val miscSources: List<FactorioObject>,
+    override val fuelFor: List<Entity>,
 ) : Goods() {
-
     override val isPower: Boolean = false
     override val type: String = "Item"
     override val sortingOrder: FactorioObjectSortOrder = FactorioObjectSortOrder.ITEMS

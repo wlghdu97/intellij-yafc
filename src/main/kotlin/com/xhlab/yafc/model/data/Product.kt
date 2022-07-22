@@ -1,51 +1,24 @@
 package com.xhlab.yafc.model.data
 
-class Product : IFactorioObjectWrapper {
-
-    val goods: Goods
-    val amountMin: Float
-    val amountMax: Float
-    override val amount: Float // This is average amount including probability and range
-    var productivityAmount: Float
+data class Product(
+    val goods: Goods,
+    val amountMin: Float,
+    val amountMax: Float,
+    override val amount: Float, // This is average amount including probability and range
+    val productivityAmount: Float,
     val probability: Float
+) : IFactorioObjectWrapper {
 
-    constructor(goods: Goods, amount: Float) {
-        this.goods = goods
-        this.amountMin = amount
-        this.amountMax = amount
-        this.amount = amount
-        this.productivityAmount = amount
-        this.probability = amount
-    }
+    constructor(goods: Goods, amount: Float) : this(goods, amount, amount, amount, amount, amount)
 
-    constructor(goods: Goods, min: Float, max: Float, probability: Float) {
-        this.goods = goods
-        this.amountMin = min
-        this.amountMax = max
-        this.probability = probability
-        val amount = probability * (min + max) / 2
-        this.amount = amount
-        this.productivityAmount = amount
-    }
-
-    fun setCatalyst(catalyst: Float) {
-        val catalyticMin = amountMin - catalyst
-        val catalyticMax = amountMax - catalyst
-        productivityAmount = when {
-            (catalyticMax <= 0) -> {
-                0f
-            }
-
-            (catalyticMin >= 0f) -> {
-                (catalyticMin + catalyticMax) * 0.5f * probability
-            }
-
-            else -> {
-                // TODO super duper rare case, might not be precise
-                probability * catalyticMax * catalyticMax * 0.5f / (catalyticMax - catalyticMin)
-            }
-        }
-    }
+    constructor(goods: Goods, min: Float, max: Float, probability: Float) : this(
+        goods = goods,
+        amountMin = min,
+        amountMax = max,
+        amount = probability * (min + max) / 2,
+        productivityAmount = probability * (min + max) / 2,
+        probability = probability
+    )
 
     fun getAmount(productivityBonus: Float) = amount + productivityBonus * productivityAmount
 

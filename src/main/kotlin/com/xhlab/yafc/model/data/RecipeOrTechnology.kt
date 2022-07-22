@@ -6,7 +6,6 @@ import com.xhlab.yafc.model.data.entity.Entity
 import com.xhlab.yafc.model.data.entity.EntityCrafter
 
 abstract class RecipeOrTechnology : FactorioObject() {
-
     abstract val crafters: List<EntityCrafter>
     abstract val ingredients: List<Ingredient>
     abstract val products: List<Product>
