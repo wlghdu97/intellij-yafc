@@ -3,14 +3,13 @@ package com.xhlab.yafc.parser.data.deserializer
 import com.xhlab.yafc.model.Project
 import com.xhlab.yafc.model.Version
 import com.xhlab.yafc.model.data.Fluid
-import com.xhlab.yafc.model.data.RecipeOrTechnology
 import com.xhlab.yafc.model.data.entity.Entity
 import com.xhlab.yafc.model.data.entity.EntityCrafter
-import com.xhlab.yafc.parser.data.mutable.MutableFactorioObject
-import com.xhlab.yafc.parser.data.mutable.MutableGoods
-import com.xhlab.yafc.parser.data.mutable.MutableItem
-import com.xhlab.yafc.parser.data.mutable.MutableRecipe
+import com.xhlab.yafc.parser.data.deserializer.FactorioDataDeserializer.TypeWithName.Companion.typeWithName
+import com.xhlab.yafc.parser.data.mutable.*
 import org.luaj.vm2.LuaTable
+import kotlin.reflect.KType
+import kotlin.reflect.typeOf
 
 class FactorioDataDeserializer constructor(
     projectPath: String,
@@ -22,11 +21,11 @@ class FactorioDataDeserializer constructor(
 ) {
     internal val allObjects = arrayListOf<MutableFactorioObject>()
     internal val rootAccessible = arrayListOf<MutableFactorioObject>()
-    internal val registeredObjects = hashMapOf<String, MutableFactorioObject>()
+    internal val registeredObjects = hashMapOf<TypeWithName, MutableFactorioObject>()
 
     internal val fuels = DataBucket<String, MutableGoods>() // DataBucket
     internal val fuelUsers = DataBucket<Entity, String>() // DataBucket
-    internal val recipeCategories = DataBucket<String, RecipeOrTechnology>() // DataBucket
+    internal val recipeCategories = DataBucket<String, MutableRecipeOrTechnology>() // DataBucket
     internal val recipeCrafters = DataBucket<EntityCrafter, String>() // DataBucket
     internal val recipeModules = DataBucket<MutableRecipe, MutableItem>() // DataBucket
     internal val placeResults = hashMapOf<MutableItem, String>()
@@ -37,8 +36,9 @@ class FactorioDataDeserializer constructor(
     internal val formerAliases = hashMapOf<String, MutableFactorioObject>()
     internal val rocketInventorySizes = hashMapOf<String, Int>()
 
-    private val common = CommonDeserializer(this, projectPath, data, prototypes, renderIcons)
-    private val context = ContextDeserializer(this, expensiveRecipes, factorioVersion)
+    internal val common = CommonDeserializer(this, projectPath, data, prototypes, renderIcons)
+    internal val context = ContextDeserializer(this, expensiveRecipes, factorioVersion)
+    internal val recipeAndTechnology = RecipeAndTechnologyDeserializer(this)
 
     fun loadData(): Project {
         return common.loadData()
@@ -61,7 +61,8 @@ class FactorioDataDeserializer constructor(
         name: String,
         construct: (name: String) -> T
     ): T where T : MutableFactorioObject {
-        val existing = registeredObjects[name] as? T
+        val key = typeWithName<T>(name)
+        val existing = registeredObjects[key] as? T
         if (existing != null) {
             return existing
         }
@@ -69,8 +70,16 @@ class FactorioDataDeserializer constructor(
         // sometimes target object is not yet created.
         val newItem = construct.invoke(name)
         allObjects.add(newItem)
-        registeredObjects[name] = newItem
+        registeredObjects[key] = newItem
 
         return newItem
+    }
+
+    data class TypeWithName(val type: KType, val name: String) {
+        companion object {
+            inline fun <reified T> typeWithName(name: String): TypeWithName where T : MutableFactorioObject {
+                return TypeWithName(typeOf<T>(), name)
+            }
+        }
     }
 }

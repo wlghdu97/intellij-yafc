@@ -6,84 +6,70 @@ import com.xhlab.yafc.model.data.entity.Entity
 import com.xhlab.yafc.model.data.entity.EntityEnergy
 import com.xhlab.yafc.model.data.entity.EntityEnergyType
 import com.xhlab.yafc.parser.data.SpecialNames
-import com.xhlab.yafc.parser.data.mutable.MutableProduct
-import com.xhlab.yafc.parser.data.mutable.MutableSpecial
+import com.xhlab.yafc.parser.data.deserializer.FactorioDataDeserializer.TypeWithName.Companion.typeWithName
+import com.xhlab.yafc.parser.data.mutable.*
 
 class ContextDeserializer constructor(
     private val parent: FactorioDataDeserializer,
     private val expensiveRecipes: Boolean,
     private val factorioVersion: Version
 ) {
-    private val generatorProduction: Recipe by lazy {
-        createSpecialRecipe(
-            production = electricity,
-            category = SpecialNames.generatorRecipe,
-            hint = "generating",
-            products = listOf(MutableProduct(electricity, 1f)),
-            flags = RecipeFlags.SCALE_PRODUCTION_WITH_POWER
-        )
-    }
-    private val reactorProduction: Recipe by lazy {
-        createSpecialRecipe(
-            production = heat,
-            category = SpecialNames.reactorRecipe,
-            hint = "generating",
-            products = listOf(MutableProduct(heat, 1f)),
-            flags = RecipeFlags.SCALE_PRODUCTION_WITH_POWER
-        )
-    }
-    private val voidEnergy: MutableSpecial by lazy {
-        createSpecialObject(
-            isPower = true,
-            name = SpecialNames.void,
-            locName = "Void",
-            locDescr = "This is an object that represents infinite energy",
-            icon = "__core__/graphics/icons/mip/infinity.png",
-            signal = "signal-V"
-        )
-    }
-    private val heat: MutableSpecial by lazy {
-        createSpecialObject(
-            isPower = true,
-            name = SpecialNames.heat,
-            locName = "Heat",
-            locDescr = "This is an object that represents heat energy",
-            icon = "__core__/graphics/arrows/heat-exchange-indication.png",
-            signal = "signal-H"
-        )
-    }
-    private val electricity: MutableSpecial by lazy {
-        createSpecialObject(
-            isPower = true,
-            name = SpecialNames.electricity,
-            locName = "Electricity",
-            locDescr = "This is an object that represents electric energy",
-            icon = "__core__/graphics/icons/alerts/electricity-icon-unplugged.png",
-            signal = "signal-E"
-        )
-    }
-    private val rocketLaunch: MutableSpecial by lazy {
-        createSpecialObject(
-            isPower = false,
-            name = SpecialNames.rocketLaunch,
-            locName = "Rocket launch slot",
-            locDescr = "This is a slot in a rocket ready to be launched",
-            icon = "__base__/graphics/entity/rocket-silo/02-rocket.png",
-            signal = "signal-R"
-        )
-    }
-    private val voidEntityEnergy: EntityEnergy by lazy {
-        EntityEnergy(
-            type = EntityEnergyType.VOID,
-            effectivity = Float.POSITIVE_INFINITY
-        )
-    }
-    private val laborEntityEnergy: EntityEnergy by lazy {
-        EntityEnergy(
-            type = EntityEnergyType.LABOR,
-            effectivity = Float.POSITIVE_INFINITY
-        )
-    }
+    private val electricity: MutableSpecial = createSpecialObject(
+        isPower = true,
+        name = SpecialNames.electricity,
+        locName = "Electricity",
+        locDescr = "This is an object that represents electric energy",
+        icon = "__core__/graphics/icons/alerts/electricity-icon-unplugged.png",
+        signal = "signal-E"
+    )
+    private val heat: MutableSpecial = createSpecialObject(
+        isPower = true,
+        name = SpecialNames.heat,
+        locName = "Heat",
+        locDescr = "This is an object that represents heat energy",
+        icon = "__core__/graphics/arrows/heat-exchange-indication.png",
+        signal = "signal-H"
+    )
+    private val voidEnergy: MutableSpecial = createSpecialObject(
+        isPower = true,
+        name = SpecialNames.void,
+        locName = "Void",
+        locDescr = "This is an object that represents infinite energy",
+        icon = "__core__/graphics/icons/mip/infinity.png",
+        signal = "signal-V"
+    )
+    internal val rocketLaunch: MutableSpecial = createSpecialObject(
+        isPower = false,
+        name = SpecialNames.rocketLaunch,
+        locName = "Rocket launch slot",
+        locDescr = "This is a slot in a rocket ready to be launched",
+        icon = "__base__/graphics/entity/rocket-silo/02-rocket.png",
+        signal = "signal-R"
+    )
+
+    private val voidEntityEnergy: EntityEnergy = EntityEnergy(
+        type = EntityEnergyType.VOID,
+        effectivity = Float.POSITIVE_INFINITY
+    )
+    private val laborEntityEnergy: EntityEnergy = EntityEnergy(
+        type = EntityEnergyType.LABOR,
+        effectivity = Float.POSITIVE_INFINITY
+    )
+
+    private val generatorProduction: MutableRecipe = createSpecialRecipe(
+        production = electricity,
+        category = SpecialNames.generatorRecipe,
+        hint = "generating",
+        products = listOf(MutableProduct(electricity, 1f)),
+        flags = RecipeFlags.SCALE_PRODUCTION_WITH_POWER
+    )
+    private val reactorProduction: MutableRecipe = createSpecialRecipe(
+        production = heat,
+        category = SpecialNames.reactorRecipe,
+        hint = "generating",
+        products = listOf(MutableProduct(heat, 1f)),
+        flags = RecipeFlags.SCALE_PRODUCTION_WITH_POWER
+    )
 
     private lateinit var character: Entity
 
@@ -393,33 +379,35 @@ class ContextDeserializer constructor(
 //        }
 //    }
 
-    private fun createSpecialRecipe(
-        production: FactorioObject,
+    internal fun createSpecialRecipe(
+        production: MutableFactorioObject,
         category: String,
         hint: String,
         products: List<MutableProduct> = emptyList(),
-        flags: RecipeFlags,
-        ingredients: List<Ingredient> = emptyList()
-    ): Recipe {
+        ingredients: List<MutableIngredient> = emptyList(),
+        flags: RecipeFlags? = null
+    ): MutableRecipe {
         val fullName = "$category${(if (category.endsWith(".")) "" else ".")}${production.name}"
 
-        val recipeRaw = parent.registeredObjects[fullName] as? Mechanics
+        val recipeRaw = parent.registeredObjects[typeWithName<MutableMechanics>(fullName)] as? MutableMechanics
         if (recipeRaw != null) {
             return recipeRaw
         }
 
-        val recipe = Mechanics(
-            source = production,
-            factorioType = SpecialNames.fakeRecipe,
-            name = fullName,
-            locName = hint,
-            ingredients = ingredients,
-            products = products,
-            time = 1f,
-            enabled = true,
-            hidden = true,
-            flags = flags
-        )
+        val recipe = parent.getObject(fullName) {
+            MutableMechanics(
+                source = production,
+                factorioType = SpecialNames.fakeRecipe,
+                name = fullName,
+                locName = hint,
+                ingredients = ingredients,
+                products = products,
+                time = 1f,
+                enabled = true,
+                hidden = true,
+                flags = flags
+            )
+        }
 
         parent.recipeCategories.add(category, recipe)
 

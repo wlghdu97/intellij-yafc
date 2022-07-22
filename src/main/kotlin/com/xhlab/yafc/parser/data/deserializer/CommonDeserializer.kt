@@ -4,12 +4,11 @@ import com.intellij.openapi.diagnostic.Logger
 import com.xhlab.yafc.model.Project
 import com.xhlab.yafc.model.data.FactorioIconPart
 import com.xhlab.yafc.parser.FactorioLocalization
-import com.xhlab.yafc.parser.data.mutable.MutableFactorioObject
-import com.xhlab.yafc.parser.data.mutable.MutableItem
-import com.xhlab.yafc.parser.data.mutable.MutableModuleSpecification
-import com.xhlab.yafc.parser.data.mutable.MutableRecipe
+import com.xhlab.yafc.parser.data.SpecialNames
+import com.xhlab.yafc.parser.data.mutable.*
 import org.luaj.vm2.LuaTable
 import org.luaj.vm2.LuaValue
+import kotlin.reflect.typeOf
 
 class CommonDeserializer constructor(
     private val parent: FactorioDataDeserializer,
@@ -22,29 +21,38 @@ class CommonDeserializer constructor(
 
     private val raw = (data["raw"] as? LuaTable) ?: LuaValue.tableOf()
 
-//    private Fluid GetFluidFixedTemp(string key, int temperature)
-//    {
-//        var basic = GetObject<Fluid>(key)
-//        if (basic.temperature == temperature)
-//            return basic
-//        if (temperature < basic.temperatureRange.min)
-//            temperature = basic.temperatureRange.min
-//        var idWithTemp = key + "@" + temperature
-//        if (basic.temperature == 0)
-//        {
-//            basic.SetTemperature(temperature)
-//            registeredObjects[(typeof(Fluid), idWithTemp)] = basic
-//            return basic
-//        }
-//
-//        if (registeredObjects.TryGetValue((typeof(Fluid), idWithTemp), out var fluidWithTemp))
-//        return fluidWithTemp as Fluid
-//
-//        var split = SplitFluid(basic, temperature)
-//        allObjects.Add(split)
-//        registeredObjects[(typeof(Fluid), idWithTemp)] = split
-//        return split
-//    }
+    private fun getFluidFixedTemp(key: String, temperature: Int): MutableFluid {
+        var temp = temperature
+        val basic = parent.getObject(key, ::MutableFluid)
+        if (basic.temperature == temp) {
+            return basic
+        }
+
+        if (temp < basic.temperatureRange.min) {
+            temp = basic.temperatureRange.min
+        }
+
+        val idWithTemp = "$key@$temp"
+        val regKey = FactorioDataDeserializer.TypeWithName(typeOf<MutableFluid>(), idWithTemp)
+
+        if (basic.temperature == 0) {
+            basic.setTemperature(temp)
+            parent.registeredObjects[regKey] = basic
+
+            return basic
+        }
+
+        val fluidWithTemp = parent.registeredObjects[regKey]
+        if (fluidWithTemp != null) {
+            return fluidWithTemp as MutableFluid
+        }
+
+        val split = splitFluid(basic, temp)
+        parent.allObjects.add(split)
+        parent.registeredObjects[regKey] = split
+
+        return split
+    }
 
 //    private void UpdateSplitFluids()
 //    {
@@ -347,72 +355,88 @@ class CommonDeserializer constructor(
                 )
 
                 val limitationTable = table["limitation"]
-                val limitation = if (limitationTable.istable()) {
-                    val limitations = limitationTable.checktable().keys().mapNotNull {
+                module.limitation = if (limitationTable.istable()) {
+                    limitationTable.checktable().keys().mapNotNull {
                         val value = limitationTable[it]
                         if (value.isstring()) {
-                            parent.getObject(value.tojstring(), ::MutableRecipe)
+                            parent.getObject(value.tojstring(), ::MutableRecipeImpl)
                         } else {
                             null
                         }
                     }
-
-                    if (limitations.isNotEmpty()) {
-                        for (recipe in module.limitation) {
-                            parent.recipeModules.add(recipe, item, true)
-                        }
-                    }
-
-                    limitations
                 } else {
                     emptyList()
                 }
 
-                if (limitation.isEmpty()) {
+                if (module.limitation.isEmpty()) {
                     parent.universalModules.add(item)
+                } else {
+                    for (recipe in module.limitation) {
+                        parent.recipeModules.add(recipe, item, true)
+                    }
                 }
 
-                item.module = module.copy(limitation = limitation)
+                item.module = module
             }
 
-//            val rocketLaunchProduct = table["rocket_launch_product"]
-//            val rocketLaunchProducts = table["rocket_launch_products"]
-//            val launchProducts = when {
-//                (rocketLaunchProduct.istable()) -> {
-//                    LoadProductWithMultiplier(rocketLaunchProduct, item.stackSize).SingleElementArray()
-//                }
-//                (rocketLaunchProducts.istable()) -> {
-//                    rocketLaunchProducts.ArrayElements<LuaTable>().Select(x => LoadProductWithMultiplier(x, item.stackSize)).ToArray()
-//                }
-//                else -> null
-//            }
-//
-//            if (launchProducts != null && launchProducts.Length > 0) {
-//                var recipe = CreateSpecialRecipe(item, SpecialNames.RocketLaunch, "launched")
-//                recipe.ingredients = new[]
-//                {
-//                    new Ingredient(item, item.stackSize),
-//                    new Ingredient(rocketLaunch, 1)
-//                }
-//                recipe.products = launchProducts
-//                recipe.time = 0f // TODO what to put here?
-//            }
+            val rocketLaunchProduct = table["rocket_launch_product"]
+            val rocketLaunchProducts = table["rocket_launch_products"]
+            val launchProducts = when {
+                (rocketLaunchProduct.istable()) -> {
+                    val productTable = rocketLaunchProduct.checktable()
+                    val product = parent.recipeAndTechnology.loadProductWithMultiplier(productTable, item.stackSize)
+                    if (product != null) {
+                        listOf(product)
+                    } else {
+                        null
+                    }
+                }
+
+                (rocketLaunchProducts.istable()) -> {
+                    rocketLaunchProducts.checktable().keys().mapNotNull {
+                        val element = rocketLaunchProducts[it]
+                        if (element.istable()) {
+                            val productTable = element.checktable()
+                            parent.recipeAndTechnology.loadProductWithMultiplier(productTable, item.stackSize)
+                        } else {
+                            null
+                        }
+                    }
+                }
+
+                else -> null
+            }
+
+            if (!launchProducts.isNullOrEmpty()) {
+                val recipe = parent.context.createSpecialRecipe(item, SpecialNames.rocketLaunch, "launched")
+                recipe.ingredients = listOf(
+                    MutableIngredient(item, item.stackSize.toFloat()),
+                    MutableIngredient(parent.context.rocketLaunch, 1f)
+                )
+                recipe.products = launchProducts
+                recipe.time = 0f // TODO what to put here?
+            }
         }
     }
 
-//    private Fluid SplitFluid(Fluid basic, int temperature)
-//    {
-//        Console.WriteLine("Splitting fluid "+basic.name + " at "+temperature)
-//        if (basic.variants == null)
-//            basic.variants = new List<Fluid> {basic}
-//        var copy = basic.Clone()
-//        copy.SetTemperature(temperature)
-//        copy.variants.Add(copy)
-//        if (copy.fuelValue > 0f)
-//            fuels.Add(SpecialNames.BurnableFluid, copy)
-//        fuels.Add(SpecialNames.SpecificFluid + basic.name, copy)
-//        return copy
-//    }
+    private fun splitFluid(basic: MutableFluid, temperature: Int): MutableFluid {
+        logger.info("Splitting fluid ${basic.name} at $temperature")
+        if (basic.variants == null) {
+            basic.variants = mutableListOf(basic)
+        }
+
+        val copy = basic.copy().apply {
+            setTemperature(temperature)
+            variants?.add(this)
+        }
+
+        if (copy.fuelValue > 0f) {
+            parent.fuels.add(SpecialNames.burnableFluid, copy)
+        }
+        parent.fuels.add(SpecialNames.specificFluid + basic.name, copy)
+
+        return copy
+    }
 
 //    private void DeserializeFluid(LuaTable table)
 //    {
@@ -429,36 +453,34 @@ class CommonDeserializer constructor(
 //        fluid.temperatureRange = new TemperatureRange(table.Get("default_temperature", 0), table.Get("max_temperature", 0))
 //    }
 
-//    private Goods LoadItemOrFluid(LuaTable table, bool useTemperature, string nameField = "name")
-//    {
-//        if (!table.Get(nameField, out string name))
-//            return null
-//        if (table.Get("type", out string type) && type == "fluid")
-//        {
-//            if (useTemperature)
-//                return GetFluidFixedTemp(name, table.Get("temperature", out int temperature) ? temperature : 0)
-//            return GetObject<Fluid>(name)
-//        }
-//
-//        return GetObject<Item>(name)
-//    }
+    private fun loadItemOrFluid(table: LuaTable, useTemperature: Boolean, nameField: String = "name"): MutableGoods? {
+        val name = table[nameField].optjstring(null) ?: return null
 
-//    private bool LoadItemData(out Goods goods, out float amount, LuaTable table, bool useTemperature)
-//    {
-//        if (table.Get("name", out string name))
-//        {
-//            goods = LoadItemOrFluid(table, useTemperature)
-//            table.Get("amount", out amount)
-//            return true // true means 'may have extra data'
-//        }
-//        else
-//        {
-//            table.Get(1, out name)
-//            table.Get(2, out amount)
-//            goods = GetObject<Item>(name)
-//            return false
-//        }
-//    }
+        val type = table["type"]
+        if (type.isstring() && type.tojstring() == "fluid") {
+            if (useTemperature) {
+                val temperature = table["temperature"].optint(0)
+                return getFluidFixedTemp(name, temperature)
+            }
+
+            return parent.getObject(name, ::MutableFluid)
+        }
+
+        return parent.getObject(name, ::MutableItem)
+    }
+
+    internal fun loadItemData(table: LuaTable, useTemperature: Boolean): Triple<MutableGoods?, Float, Boolean> {
+        return if (table["name"].isstring()) {
+            val goods = loadItemOrFluid(table, useTemperature)
+            val amount = table["amount"].checkdouble().toFloat()
+            Triple(goods, amount, true) // true means 'may have extra data'
+        } else {
+            val name = table[1].checkjstring()
+            val amount = table[2].checkdouble().toFloat()
+            val goods = parent.getObject(name, ::MutableItem)
+            Triple(goods, amount, false)
+        }
+    }
 
     private val localeBuilder = StringBuilder()
 

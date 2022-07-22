@@ -7,17 +7,16 @@ import com.xhlab.yafc.model.data.entity.Entity
 import com.xhlab.yafc.model.data.entity.EntityCrafter
 
 internal abstract class MutableRecipeOrTechnology(name: String) : MutableFactorioObject(name) {
-
-    abstract val crafters: List<EntityCrafter>
-    abstract val ingredients: List<Ingredient>
-    abstract val products: List<MutableProduct>
-    open val modules: List<Item> = emptyList()
-    abstract val sourceEntity: Entity?
-    abstract val mainProduct: Goods?
-    abstract val time: Float
-    abstract val enabled: Boolean
-    abstract val hidden: Boolean
-    abstract val flags: RecipeFlags?
+    abstract var crafters: List<EntityCrafter>
+    abstract var ingredients: List<MutableIngredient>
+    abstract var products: List<MutableProduct>
+    open var modules: List<Item> = emptyList()
+    abstract var sourceEntity: Entity?
+    abstract var mainProduct: Goods?
+    abstract var time: Float
+    abstract var enabled: Boolean
+    abstract var hidden: Boolean
+    abstract var flags: RecipeFlags?
 
     override val type: String = "Recipe"
     override val sortingOrder: FactorioObjectSortOrder = FactorioObjectSortOrder.RECIPES
@@ -44,13 +43,13 @@ internal abstract class MutableRecipeOrTechnology(name: String) : MutableFactori
         }
     }
 
-    fun canFit(itemInputs: Int, fluidInputs: Int, slots: List<Goods>?): Boolean {
+    fun canFit(itemInputs: Int, fluidInputs: Int, slots: List<MutableGoods>?): Boolean {
         var mutableItemInputs = itemInputs
         var mutableFluidInputs = fluidInputs
 
         for (ingredient in ingredients) {
-            if (ingredient.goods is Item && --mutableItemInputs < 0) return false
-            if (ingredient.goods is Fluid && --mutableFluidInputs < 0) return false
+            if (ingredient.goods is MutableItem && --mutableItemInputs < 0) return false
+            if (ingredient.goods is MutableFluid && --mutableFluidInputs < 0) return false
             if (slots != null && !slots.contains(ingredient.goods)) return false
         }
 

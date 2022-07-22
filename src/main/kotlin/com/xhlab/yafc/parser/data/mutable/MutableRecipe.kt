@@ -2,34 +2,15 @@ package com.xhlab.yafc.parser.data.mutable
 
 import com.xhlab.yafc.model.analysis.DependencyList
 import com.xhlab.yafc.model.analysis.IDependencyCollector
-import com.xhlab.yafc.model.data.*
-import com.xhlab.yafc.model.data.entity.Entity
-import com.xhlab.yafc.model.data.entity.EntityCrafter
-import javax.swing.Icon
+import com.xhlab.yafc.model.data.FactorioObject
+import com.xhlab.yafc.model.data.Item
+import com.xhlab.yafc.model.data.RecipeOrTechnology
+import com.xhlab.yafc.model.data.Technology
 
-internal data class MutableRecipe(
-    override val name: String,
-    override var factorioType: String? = null,
-    override var originalName: String? = null,
-    override var typeDotName: String? = null,
-    override var locName: String? = null,
-    override var locDescr: String? = null,
-    override var iconSpec: List<FactorioIconPart>? = null,
-    override var icon: Icon? = null,
-    override var id: FactorioId? = null,
-    var fuelResult: MutableItem? = null,
-    var recipe: RecipeOrTechnology? = null,
-    var technologyUnlock: List<Technology> = emptyList(),
-    override val crafters: List<EntityCrafter> = emptyList(),
-    override val ingredients: List<Ingredient> = emptyList(),
-    override val products: List<MutableProduct> = emptyList(),
-    override val sourceEntity: Entity? = null,
-    override val mainProduct: Goods? = null,
-    override val time: Float = 0f,
-    override val enabled: Boolean = false,
-    override val hidden: Boolean = false,
-    override val flags: RecipeFlags? = null
-) : MutableRecipeOrTechnology(name) {
+internal abstract class MutableRecipe(name: String) : MutableRecipeOrTechnology(name) {
+    abstract var fuelResult: MutableItem?
+    abstract var recipe: RecipeOrTechnology?
+    abstract var technologyUnlock: List<Technology>
 
     fun hasIngredientVariants(): Boolean {
         for (ingredient in ingredients) {
