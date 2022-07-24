@@ -86,7 +86,7 @@ class CommonDeserializer constructor(
         for (prototypeName in items.keys()) {
             deserializePrototypes(raw, prototypeName.tojstring(), itemDeserializer)
         }
-//        recipeModules.SealAndDeduplicate(universalModules.ToArray())
+        parent.recipeModules.sealAndDeduplicate(parent.universalModules)
 //        allModules = allObjects.OfType<Item>().Where(x => x.module != null).ToArray()
 
 //        progress.Report(("Loading", "Loading fluids"))
