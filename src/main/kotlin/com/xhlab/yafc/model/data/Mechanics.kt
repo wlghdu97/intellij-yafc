@@ -16,7 +16,6 @@ data class Mechanics(
     override val icon: Icon,
     override val id: FactorioId,
     override val specialType: FactorioObjectSpecialType,
-    override val recipe: RecipeOrTechnology?,
     override val technologyUnlock: List<Technology>,
     override val crafters: List<EntityCrafter>,
     override val ingredients: List<Ingredient>,

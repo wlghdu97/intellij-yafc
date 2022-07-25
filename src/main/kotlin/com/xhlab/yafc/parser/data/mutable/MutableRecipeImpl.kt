@@ -1,6 +1,9 @@
 package com.xhlab.yafc.parser.data.mutable
 
-import com.xhlab.yafc.model.data.*
+import com.xhlab.yafc.model.data.FactorioIconPart
+import com.xhlab.yafc.model.data.FactorioId
+import com.xhlab.yafc.model.data.RecipeFlags
+import com.xhlab.yafc.model.data.Technology
 import com.xhlab.yafc.model.data.entity.Entity
 import com.xhlab.yafc.model.data.entity.EntityCrafter
 import javax.swing.Icon
@@ -15,8 +18,6 @@ internal data class MutableRecipeImpl(
     override var iconSpec: List<FactorioIconPart>? = null,
     override var icon: Icon? = null,
     override var id: FactorioId? = null,
-    override var fuelResult: MutableItem? = null,
-    override var recipe: RecipeOrTechnology? = null,
     override var technologyUnlock: List<Technology> = emptyList(),
     override var crafters: List<EntityCrafter> = emptyList(),
     override var ingredients: List<MutableIngredient> = emptyList(),

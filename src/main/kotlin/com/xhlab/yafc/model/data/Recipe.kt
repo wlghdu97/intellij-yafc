@@ -4,7 +4,6 @@ import com.xhlab.yafc.model.analysis.DependencyList
 import com.xhlab.yafc.model.analysis.IDependencyCollector
 
 abstract class Recipe : RecipeOrTechnology() {
-    abstract val recipe: RecipeOrTechnology?
     abstract val technologyUnlock: List<Technology>
 
     fun hasIngredientVariants(): Boolean {

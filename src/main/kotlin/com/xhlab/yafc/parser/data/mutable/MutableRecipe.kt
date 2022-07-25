@@ -3,11 +3,8 @@ package com.xhlab.yafc.parser.data.mutable
 import com.xhlab.yafc.model.analysis.DependencyList
 import com.xhlab.yafc.model.analysis.IDependencyCollector
 import com.xhlab.yafc.model.data.FactorioObject
-import com.xhlab.yafc.model.data.RecipeOrTechnology
 import com.xhlab.yafc.model.data.Technology
 
-    abstract var fuelResult: MutableItem?
-    abstract var recipe: RecipeOrTechnology?
 internal abstract class MutableRecipe : MutableRecipeOrTechnology() {
     abstract var technologyUnlock: List<Technology>
 
