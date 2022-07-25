@@ -15,8 +15,8 @@ abstract class FactorioObject : IFactorioObjectWrapper, Comparable<FactorioObjec
     abstract val id: FactorioId?
 
     internal abstract val sortingOrder: FactorioObjectSortOrder
-    abstract val specialType: FactorioObjectSpecialType?
-    abstract val type: String?
+    abstract val specialType: FactorioObjectSpecialType
+    abstract val type: String
 
     override val target: FactorioObject
         get() = this

@@ -8,7 +8,7 @@ import com.xhlab.yafc.model.data.UnitOfMeasure
 import com.xhlab.yafc.model.data.entity.Entity
 
 // Abstract base for anything that can be produced or consumed by recipes (etc.)
-internal abstract class MutableGoods(name: String) : MutableFactorioObject(name) {
+internal abstract class MutableGoods : MutableFactorioObject() {
     abstract val fuelValue: Float
     abstract val isPower: Boolean
     abstract val production: List<Recipe>

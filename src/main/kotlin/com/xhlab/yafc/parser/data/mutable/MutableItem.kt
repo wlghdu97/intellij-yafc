@@ -23,7 +23,7 @@ internal data class MutableItem(
     override var usages: List<Recipe> = emptyList(),
     override var miscSources: List<FactorioObject> = emptyList(),
     override var fuelFor: List<Entity> = emptyList(),
-) : MutableGoods(name) {
+) : MutableGoods() {
     override val isPower: Boolean = false
     override val type: String = "Item"
     override val sortingOrder: FactorioObjectSortOrder = FactorioObjectSortOrder.ITEMS

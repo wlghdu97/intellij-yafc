@@ -16,7 +16,6 @@ internal data class MutableMechanics(
     override var iconSpec: List<FactorioIconPart>? = null,
     override var icon: Icon? = null,
     override var id: FactorioId? = null,
-    override val specialType: FactorioObjectSpecialType? = null,
     override var fuelResult: MutableItem? = null,
     override var recipe: RecipeOrTechnology? = null,
     override var technologyUnlock: List<Technology> = emptyList(),
@@ -29,7 +28,7 @@ internal data class MutableMechanics(
     override var enabled: Boolean = false,
     override var hidden: Boolean = false,
     override var flags: RecipeFlags? = null
-) : MutableRecipe(name) {
+) : MutableRecipe() {
     override val sortingOrder: FactorioObjectSortOrder = FactorioObjectSortOrder.MECHANICS
     override val type: String = "Mechanics"
 }

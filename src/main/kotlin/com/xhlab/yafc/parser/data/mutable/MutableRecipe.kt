@@ -6,9 +6,9 @@ import com.xhlab.yafc.model.data.FactorioObject
 import com.xhlab.yafc.model.data.RecipeOrTechnology
 import com.xhlab.yafc.model.data.Technology
 
-internal abstract class MutableRecipe(name: String) : MutableRecipeOrTechnology(name) {
     abstract var fuelResult: MutableItem?
     abstract var recipe: RecipeOrTechnology?
+internal abstract class MutableRecipe : MutableRecipeOrTechnology() {
     abstract var technologyUnlock: List<Technology>
 
     fun hasIngredientVariants(): Boolean {

@@ -29,7 +29,7 @@ internal data class MutableTechnology(
     override var flags: RecipeFlags? = null,
     var count: Float = 0f, // TODO support formula count
     var unlockRecipes: List<MutableRecipe> = emptyList()
-) : MutableRecipeOrTechnology(name) { // Technology is very similar to recipe
+) : MutableRecipeOrTechnology() { // Technology is very similar to recipe
     var prerequisites: List<MutableTechnology> = emptyList()
 
     override val sortingOrder: FactorioObjectSortOrder = FactorioObjectSortOrder.TECHNOLOGIES

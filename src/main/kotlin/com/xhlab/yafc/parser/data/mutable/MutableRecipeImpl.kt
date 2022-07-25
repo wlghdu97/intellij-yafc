@@ -27,4 +27,4 @@ internal data class MutableRecipeImpl(
     override var enabled: Boolean = false,
     override var hidden: Boolean = false,
     override var flags: RecipeFlags? = null
-) : MutableRecipe(name)
+) : MutableRecipe()

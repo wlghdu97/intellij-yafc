@@ -23,7 +23,7 @@ internal data class MutableFluid(
     override var usages: List<Recipe> = emptyList(),
     override var miscSources: List<FactorioObject> = emptyList(),
     override var fuelFor: List<Entity> = emptyList(),
-) : MutableGoods(name) {
+) : MutableGoods() {
     var variants: MutableList<MutableFluid>? = null
 
     override val isPower: Boolean = false

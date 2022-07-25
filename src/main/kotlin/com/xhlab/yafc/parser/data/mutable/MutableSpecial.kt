@@ -21,7 +21,7 @@ internal data class MutableSpecial(
     override val usages: List<Recipe> = emptyList(),
     override val miscSources: List<FactorioObject> = emptyList(),
     override val fuelFor: List<Entity> = emptyList()
-) : MutableGoods(name) {
+) : MutableGoods() {
     override val isPower: Boolean = power
     override val type: String = if (isPower) "Power" else "Special"
     override val sortingOrder: FactorioObjectSortOrder = FactorioObjectSortOrder.SPECIAL_GOODS

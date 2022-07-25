@@ -8,7 +8,7 @@ import com.xhlab.yafc.model.data.RecipeFlags
 import com.xhlab.yafc.model.data.entity.Entity
 import com.xhlab.yafc.model.data.entity.EntityCrafter
 
-internal abstract class MutableRecipeOrTechnology(name: String) : MutableFactorioObject(name) {
+internal abstract class MutableRecipeOrTechnology : MutableFactorioObject() {
     abstract var crafters: List<EntityCrafter>
     abstract var ingredients: List<MutableIngredient>
     abstract var products: List<MutableProduct>
