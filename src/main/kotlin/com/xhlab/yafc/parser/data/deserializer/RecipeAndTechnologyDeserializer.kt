@@ -1,48 +1,77 @@
 package com.xhlab.yafc.parser.data.deserializer
 
-import com.xhlab.yafc.parser.data.mutable.MutableProduct
+import com.xhlab.yafc.model.data.RecipeFlags
+import com.xhlab.yafc.model.data.TemperatureRange
+import com.xhlab.yafc.parser.data.SpecialNames
+import com.xhlab.yafc.parser.data.mutable.*
 import org.luaj.vm2.LuaTable
 
 class RecipeAndTechnologyDeserializer constructor(
-    private val parent: FactorioDataDeserializer
+    private val parent: FactorioDataDeserializer,
+    private val expensiveRecipes: Boolean
 ) {
-//    private T DeserializeWithDifficulty<T>(LuaTable table, string prototypeType, Action<T, LuaTable, bool> loader) where T : FactorioObject, new()
-//    {
-//        var obj = DeserializeCommon<T>(table, prototypeType);
-//        var current = expensiveRecipes ? table["expensive"] : table["normal"];
-//        var fallback = expensiveRecipes ? table["normal"] : table["expensive"];
-//        if (current is LuaTable)
-//            loader(obj, current as LuaTable, false);
-//        else if (fallback is LuaTable)
-//            loader(obj, fallback as LuaTable, current is bool b && !b);
-//        else loader(obj, table, false);
-//        return obj;
-//    }
-//
-//    private void DeserializeRecipe(LuaTable table)
-//    {
-//        var recipe = DeserializeWithDifficulty<Recipe>(table, "recipe", LoadRecipeData);
-//        table.Get("category", out string recipeCategory, "crafting");
-//        recipeCategories.Add(recipeCategory, recipe);
-//        recipe.modules = recipeModules.GetArray(recipe);
-//        recipe.flags |= RecipeFlags.LimitedByTickRate;
-//    }
-//
-//    private void DeserializeFlags(LuaTable table, RecipeOrTechnology recipe, bool forceDisable)
-//    {
-//        recipe.hidden = table.Get("hidden", true);
-//        if (forceDisable)
-//            recipe.enabled = false;
-//        else recipe.enabled = table.Get("enabled", true);
-//    }
-//
-//    private void DeserializeTechnology(LuaTable table)
-//    {
-//        var technology = DeserializeWithDifficulty<Technology>(table, "technology", LoadTechnologyData);
-//        recipeCategories.Add(SpecialNames.Labs, technology);
-//        technology.products = Array.Empty<Product>();
-//    }
-//
+    private inline fun <reified T> deserializeWithDifficulty(
+        table: LuaTable,
+        prototypeType: String,
+        construct: (name: String) -> T,
+        loader: (T, LuaTable, Boolean) -> Unit
+    ): T where T : MutableFactorioObject {
+        val obj = parent.common.deserializeCommon(table, prototypeType, construct)
+
+        val current = if (expensiveRecipes) table["expensive"] else table["normal"]
+        val fallback = if (expensiveRecipes) table["normal"] else table["expensive"]
+        when {
+            (current.istable()) -> {
+                loader(obj, current.checktable(), false)
+            }
+
+            (fallback.istable()) -> {
+                val forceDisable = current.isboolean() && !current.toboolean()
+                loader(obj, fallback.checktable(), forceDisable)
+            }
+
+            else -> {
+                loader(obj, table, false)
+            }
+        }
+
+        return obj
+    }
+
+    internal val recipeDeserializer = object : CommonDeserializer.Deserializer {
+        override fun deserialize(table: LuaTable) {
+            val recipe =
+                deserializeWithDifficulty(table, "recipe", ::MutableRecipeImpl) { recipe, luaTable, forceDisable ->
+                    loadRecipeData(recipe, luaTable, forceDisable)
+                }
+
+            val recipeCategory = table["category"].optjstring("crafting")
+            parent.recipeCategories.add(recipeCategory, recipe)
+            recipe.modules = parent.recipeModules.getList(recipe)
+            recipe.flags = RecipeFlags.LIMITED_BY_TICK_RATE or recipe.flags
+        }
+    }
+
+    private fun deserializeFlags(table: LuaTable, recipe: MutableRecipeOrTechnology, forceDisable: Boolean) {
+        recipe.hidden = table["hidden"].optboolean(true)
+        recipe.enabled = if (forceDisable) {
+            false
+        } else {
+            table["enabled"].optboolean(true)
+        }
+    }
+
+    internal val technologyDeserializer = object : CommonDeserializer.Deserializer {
+        override fun deserialize(table: LuaTable) {
+            val technology =
+                deserializeWithDifficulty(table, "technology", ::MutableTechnology) { tech, luaTable, forceDisable ->
+                    loadTechnologyData(tech, luaTable, forceDisable)
+                }
+            parent.recipeCategories.add(SpecialNames.labs, technology)
+            technology.products = emptyList()
+        }
+    }
+
 //    private void UpdateRecipeCatalysts()
 //    {
 //        foreach (var recipe in allObjects.OfType<Recipe>())
@@ -96,21 +125,37 @@ class RecipeAndTechnologyDeserializer constructor(
 //            }
 //        }
 //    }
-//
-//    private void LoadTechnologyData(Technology technology, LuaTable table, bool forceDisable)
-//    {
-//        table.Get("unit", out LuaTable unit);
-//        technology.ingredients = LoadIngredientList(unit);
-//        DeserializeFlags(table, technology, forceDisable);
-//        technology.time = unit.Get("time", 1f);
-//        technology.count = unit.Get("count", 1000f);
-//        if (table.Get("prerequisites", out LuaTable preqList))
-//            technology.prerequisites = preqList.ArrayElements<string>().Select(GetObject<Technology>).ToArray();
-//        if (table.Get("effects", out LuaTable modifiers))
-//            technology.unlockRecipes = modifiers.ArrayElements<LuaTable>()
-//                .Select(x => x.Get("type", out string type) && type == "unlock-recipe" && GetRef<Recipe>(x,"recipe", out var recipe) ? recipe : null).Where(x => x != null)
-//        .ToArray();
-//    }
+
+    private fun loadTechnologyData(technology: MutableTechnology, table: LuaTable, forceDisable: Boolean) {
+        val unit = table["unit"].checktable()
+        technology.ingredients = loadIngredientList(unit)
+        deserializeFlags(table, technology, forceDisable)
+
+        technology.time = unit["time"].optdouble(1.0).toFloat()
+        technology.count = unit["count"].optdouble(1000.0).toFloat()
+
+        val prerequisites = table["prerequisites"].opttable(null)
+        if (prerequisites != null) {
+            technology.prerequisites = prerequisites.keys().asSequence()
+                .mapNotNull { prerequisites[it].optjstring(null) }
+                .map { parent.getObject(it, ::MutableTechnology) }
+                .toList()
+        }
+
+        val modifiers = table["effects"].opttable(null)
+        if (modifiers != null) {
+            technology.unlockRecipes = modifiers.keys().asSequence()
+                .mapNotNull { modifiers[it].opttable(null) }
+                .mapNotNull {
+                    val type = it["type"].optjstring("")
+                    if (type == "unlock-recipe") {
+                        parent.getRef(it, "recipe", ::MutableRecipeImpl).second
+                    } else {
+                        null
+                    }
+                }.toList()
+        }
+    }
 
     internal fun loadProduct(table: LuaTable) = loadProductWithMultiplier(table, 1)
 
@@ -139,49 +184,69 @@ class RecipeAndTechnologyDeserializer constructor(
         return product
     }
 
-//    private Product[] LoadProductList(LuaTable table)
-//    {
-//        if (table.Get("results", out LuaTable resultList))
-//        {
-//            return resultList.ArrayElements<LuaTable>().Select(LoadProduct).Where(x => x.amount != 0).ToArray();
-//        }
-//
-//        table.Get("result", out string name);
-//        if (name == null)
-//            return Array.Empty<Product>();
-//        var singleProduct = new Product(GetObject<Item>(name), table.Get("result_count", out float amount) ? amount : table.Get("count", 1));
-//        return singleProduct.SingleElementArray();
-//    }
-//
-//    private Ingredient[] LoadIngredientList(LuaTable table)
-//    {
-//        table.Get("ingredients", out LuaTable ingrList);
-//        return ingrList.ArrayElements<LuaTable>().Select(x =>
-//        {
-//            var haveExtraData = LoadItemData(out var goods, out var amount, x, false);
-//            var ingredient = new Ingredient(goods, amount);
-//            if (haveExtraData && goods is Fluid f)
-//            {
-//                ingredient.temperature = x.Get("temperature", out int temp)
-//                ? new TemperatureRange(temp)
-//                : new TemperatureRange(x.Get("minimum_temperature", f.temperatureRange.min), x.Get("maximum_temperature", f.temperatureRange.max));
-//            }
-//            return ingredient;
-//        }).ToArray();
-//    }
-//
-//    private void LoadRecipeData(Recipe recipe, LuaTable table, bool forceDisable)
-//    {
-//        recipe.ingredients = LoadIngredientList(table);
-//        recipe.products = LoadProductList(table);
-//
-//        recipe.time = table.Get("energy_required", 0.5f);
-//
-//        if (table.Get("main_product", out string mainProductName) && mainProductName != "")
-//            recipe.mainProduct = recipe.products.FirstOrDefault(x => x.goods.name == mainProductName)?.goods;
-//        else if (recipe.products.Length == 1)
-//        recipe.mainProduct = recipe.products[0]?.goods;
-//
-//        DeserializeFlags(table, recipe, forceDisable);
-//    }
+    private fun loadProductList(table: LuaTable): List<MutableProduct> {
+        val resultList = table["results"]
+        if (resultList.istable()) {
+            return resultList.checktable().keys().asSequence()
+                .mapNotNull { resultList[it].opttable(null) }
+                .mapNotNull { loadProduct(it) }
+                .filter { it.amount != 0f }
+                .toList()
+        }
+
+        val name = table["result"].optjstring(null)
+        if (name != null) {
+            val goods = parent.getObject(name, ::MutableItem)
+            val amount = table["result_count"].optdouble(table["count"].optint(1).toDouble()).toFloat()
+            val singleProduct = MutableProduct(goods, amount)
+            return listOf(singleProduct)
+        }
+
+        return emptyList()
+    }
+
+    private fun loadIngredientList(table: LuaTable): List<MutableIngredient> {
+        val ingredients = table["ingredients"]
+        return if (ingredients.istable()) {
+            ingredients.checktable().keys().mapNotNull {
+                val element = ingredients[it].checktable()
+                val (goods, amount, haveExtraData) = parent.common.loadItemData(element, false)
+                if (goods == null) {
+                    return@mapNotNull null
+                }
+
+                val ingredient = MutableIngredient(goods, amount)
+                if (haveExtraData && goods is MutableFluid) {
+                    val temperature = element["temperature"]
+                    ingredient.temperature = if (temperature.isint()) {
+                        TemperatureRange(temperature.toint())
+                    } else {
+                        val min = element["minimum_temperature"].optint(goods.temperatureRange.min)
+                        val max = element["maximum_temperature"].optint(goods.temperatureRange.max)
+                        TemperatureRange(min, max)
+                    }
+                }
+
+                ingredient
+            }
+        } else {
+            emptyList()
+        }
+    }
+
+    private fun loadRecipeData(recipe: MutableRecipeImpl, table: LuaTable, forceDisable: Boolean) {
+        recipe.ingredients = loadIngredientList(table)
+        recipe.products = loadProductList(table)
+
+        recipe.time = table["energy_required"].optdouble(0.5).toFloat()
+
+        val mainProductName = table["main_product"].optjstring(null)
+        if (mainProductName != null && mainProductName != "") {
+            recipe.mainProduct = recipe.products.firstOrNull { it.goods.name == mainProductName }?.goods
+        } else if (recipe.products.size == 1) {
+            recipe.mainProduct = recipe.products[0].goods
+        }
+
+        deserializeFlags(table, recipe, forceDisable)
+    }
 }

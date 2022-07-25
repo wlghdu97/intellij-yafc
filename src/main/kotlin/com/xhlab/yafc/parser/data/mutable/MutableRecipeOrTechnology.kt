@@ -2,7 +2,9 @@ package com.xhlab.yafc.parser.data.mutable
 
 import com.xhlab.yafc.model.analysis.DependencyList
 import com.xhlab.yafc.model.analysis.IDependencyCollector
-import com.xhlab.yafc.model.data.*
+import com.xhlab.yafc.model.data.FactorioObject
+import com.xhlab.yafc.model.data.FactorioObjectSortOrder
+import com.xhlab.yafc.model.data.RecipeFlags
 import com.xhlab.yafc.model.data.entity.Entity
 import com.xhlab.yafc.model.data.entity.EntityCrafter
 
@@ -10,9 +12,9 @@ internal abstract class MutableRecipeOrTechnology(name: String) : MutableFactori
     abstract var crafters: List<EntityCrafter>
     abstract var ingredients: List<MutableIngredient>
     abstract var products: List<MutableProduct>
-    open var modules: List<Item> = emptyList()
+    open var modules: List<MutableItem> = emptyList()
     abstract var sourceEntity: Entity?
-    abstract var mainProduct: Goods?
+    abstract var mainProduct: MutableGoods?
     abstract var time: Float
     abstract var enabled: Boolean
     abstract var hidden: Boolean

@@ -3,6 +3,7 @@ package com.xhlab.yafc.parser.data.deserializer
 import com.intellij.openapi.diagnostic.Logger
 import com.xhlab.yafc.model.Project
 import com.xhlab.yafc.model.data.FactorioIconPart
+import com.xhlab.yafc.model.data.TemperatureRange
 import com.xhlab.yafc.parser.FactorioLocalization
 import com.xhlab.yafc.parser.data.SpecialNames
 import com.xhlab.yafc.parser.data.mutable.*
@@ -87,19 +88,19 @@ class CommonDeserializer constructor(
             deserializePrototypes(raw, prototypeName.tojstring(), itemDeserializer)
         }
         parent.recipeModules.sealAndDeduplicate(parent.universalModules)
-//        allModules = allObjects.OfType<Item>().Where(x => x.module != null).ToArray()
+        parent.allModules.addAll(parent.allObjects.filterIsInstance<MutableItem>().filter { it.module != null })
 
 //        progress.Report(("Loading", "Loading fluids"))
 
-//        deserializePrototypes(raw, "fluid", DeserializeFluid)
+        deserializePrototypes(raw, "fluid", fluidDeserializer)
 
 //        progress.Report(("Loading", "Loading recipes"))
 
-//        deserializePrototypes(raw, "recipe", DeserializeRecipe)
+        deserializePrototypes(raw, "recipe", parent.recipeAndTechnology.recipeDeserializer)
 
 //        progress.Report(("Loading", "Loading technologies"))
 
-//        deserializePrototypes(raw, "technology", DeserializeTechnology)
+        deserializePrototypes(raw, "technology", parent.recipeAndTechnology.technologyDeserializer)
 
 //        progress.Report(("Loading", "Loading entities"))
 
@@ -438,20 +439,30 @@ class CommonDeserializer constructor(
         return copy
     }
 
-//    private void DeserializeFluid(LuaTable table)
-//    {
-//        var fluid = DeserializeCommon<Fluid>(table, "fluid")
-//        fluid.originalName = fluid.name
-//        if (table.Get("fuel_value", out string fuelValue))
-//        {
-//            fluid.fuelValue = ParseEnergy(fuelValue)
-//            fuels.Add(SpecialNames.BurnableFluid, fluid)
-//        }
-//        fuels.Add(SpecialNames.SpecificFluid + fluid.name, fluid)
-//        if (table.Get("heat_capacity", out string heatCap))
-//            fluid.heatCapacity = ParseEnergy(heatCap)
-//        fluid.temperatureRange = new TemperatureRange(table.Get("default_temperature", 0), table.Get("max_temperature", 0))
-//    }
+    private val fluidDeserializer = object : Deserializer {
+        override fun deserialize(table: LuaTable) {
+            val fluid = deserializeCommon(table, "fluid", ::MutableFluid)
+
+            fluid.originalName = fluid.name
+
+            val fuelValue = table["fuel_value"]
+            if (fuelValue.isstring()) {
+                fluid.fuelValue = parseEnergy(fuelValue.tojstring())
+                parent.fuels.add(SpecialNames.burnableFluid, fluid)
+            }
+
+            parent.fuels.add(SpecialNames.specificFluid + fluid.name, fluid)
+
+            val heatCapacity = table["heat_capacity"]
+            if (heatCapacity.isstring()) {
+                fluid.heatCapacity = parseEnergy(heatCapacity.tojstring())
+            }
+
+            val defaultTemperature = table["default_temperature"].optint(0)
+            val maxTemperature = table["max_temperature"].optint(0)
+            fluid.temperatureRange = TemperatureRange(defaultTemperature, maxTemperature)
+        }
+    }
 
     private fun loadItemOrFluid(table: LuaTable, useTemperature: Boolean, nameField: String = "name"): MutableGoods? {
         val name = table[nameField].optjstring(null) ?: return null
@@ -472,7 +483,7 @@ class CommonDeserializer constructor(
     internal fun loadItemData(table: LuaTable, useTemperature: Boolean): Triple<MutableGoods?, Float, Boolean> {
         return if (table["name"].isstring()) {
             val goods = loadItemOrFluid(table, useTemperature)
-            val amount = table["amount"].checkdouble().toFloat()
+            val amount = table["amount"].optdouble(0.0).toFloat()
             Triple(goods, amount, true) // true means 'may have extra data'
         } else {
             val name = table[1].checkjstring()

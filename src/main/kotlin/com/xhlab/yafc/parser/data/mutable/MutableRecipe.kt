@@ -3,7 +3,6 @@ package com.xhlab.yafc.parser.data.mutable
 import com.xhlab.yafc.model.analysis.DependencyList
 import com.xhlab.yafc.model.analysis.IDependencyCollector
 import com.xhlab.yafc.model.data.FactorioObject
-import com.xhlab.yafc.model.data.Item
 import com.xhlab.yafc.model.data.RecipeOrTechnology
 import com.xhlab.yafc.model.data.Technology
 
@@ -39,5 +38,5 @@ internal abstract class MutableRecipe(name: String) : MutableRecipeOrTechnology(
         return false
     }
 
-    fun canAcceptModule(module: Item) = modules.contains(module)
+    fun canAcceptModule(module: MutableItem) = modules.contains(module)
 }

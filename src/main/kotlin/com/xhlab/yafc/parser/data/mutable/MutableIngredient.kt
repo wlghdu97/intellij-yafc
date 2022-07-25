@@ -10,7 +10,7 @@ internal data class MutableIngredient constructor(
     val variants: List<MutableGoods>? = null
 ) : IFactorioObjectWrapper {
 
-    val temperature: TemperatureRange = if (goods is MutableFluid) {
+    var temperature: TemperatureRange = if (goods is MutableFluid) {
         goods.temperatureRange
     } else {
         TemperatureRange.Any

@@ -18,13 +18,14 @@ internal data class MutableFluid(
     var temperatureRange: TemperatureRange = TemperatureRange.Any,
     var temperature: Int = 0,
     var heatValue: Float = 0f,
-    var variants: MutableList<MutableFluid>? = null,
     override var fuelValue: Float = 0f,
     override var production: List<Recipe> = emptyList(),
     override var usages: List<Recipe> = emptyList(),
     override var miscSources: List<FactorioObject> = emptyList(),
     override var fuelFor: List<Entity> = emptyList(),
 ) : MutableGoods(name) {
+    var variants: MutableList<MutableFluid>? = null
+
     override val isPower: Boolean = false
     override val type: String = "Fluid"
     override val sortingOrder: FactorioObjectSortOrder = FactorioObjectSortOrder.FLUIDS

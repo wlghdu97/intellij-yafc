@@ -22,7 +22,7 @@ internal data class MutableRecipeImpl(
     override var ingredients: List<MutableIngredient> = emptyList(),
     override var products: List<MutableProduct> = emptyList(),
     override var sourceEntity: Entity? = null,
-    override var mainProduct: Goods? = null,
+    override var mainProduct: MutableGoods? = null,
     override var time: Float = 0f,
     override var enabled: Boolean = false,
     override var hidden: Boolean = false,

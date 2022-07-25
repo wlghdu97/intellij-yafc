@@ -27,7 +27,7 @@ class FactorioDataDeserializer constructor(
     internal val fuelUsers = DataBucket<Entity, String>() // DataBucket
     internal val recipeCategories = DataBucket<String, MutableRecipeOrTechnology>() // DataBucket
     internal val recipeCrafters = DataBucket<EntityCrafter, String>() // DataBucket
-    internal val recipeModules = DataBucket<MutableRecipe, MutableItem>() // DataBucket
+    internal val recipeModules = DataBucket<MutableRecipeImpl, MutableItem>() // DataBucket
     internal val placeResults = hashMapOf<MutableItem, String>()
     internal val universalModules = arrayListOf<MutableItem>()
     internal val allModules = arrayListOf<MutableItem>()
@@ -38,7 +38,7 @@ class FactorioDataDeserializer constructor(
 
     internal val common = CommonDeserializer(this, projectPath, data, prototypes, renderIcons)
     internal val context = ContextDeserializer(this, expensiveRecipes, factorioVersion)
-    internal val recipeAndTechnology = RecipeAndTechnologyDeserializer(this)
+    internal val recipeAndTechnology = RecipeAndTechnologyDeserializer(this, expensiveRecipes)
 
     fun loadData(): Project {
         return common.loadData()
