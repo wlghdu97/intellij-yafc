@@ -7,8 +7,10 @@ import com.xhlab.yafc.model.data.TemperatureRange
 import com.xhlab.yafc.parser.FactorioLocalization
 import com.xhlab.yafc.parser.data.SpecialNames
 import com.xhlab.yafc.parser.data.mutable.*
+import com.xhlab.yafc.parser.data.mutable.entity.MutableEntityImpl
 import org.luaj.vm2.LuaTable
 import org.luaj.vm2.LuaValue
+import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
 class CommonDeserializer constructor(
@@ -20,9 +22,9 @@ class CommonDeserializer constructor(
 ) {
     private val logger = Logger.getInstance(CommonDeserializer::class.java)
 
-    private val raw = (data["raw"] as? LuaTable) ?: LuaValue.tableOf()
+    internal val raw = (data["raw"] as? LuaTable) ?: LuaValue.tableOf()
 
-    private fun getFluidFixedTemp(key: String, temperature: Int): MutableFluid {
+    internal fun getFluidFixedTemp(key: String, temperature: Int): MutableFluid {
         var temp = temperature
         val basic = parent.getObject(key, ::MutableFluid)
         if (basic.temperature == temp) {
@@ -104,14 +106,14 @@ class CommonDeserializer constructor(
 
 //        progress.Report(("Loading", "Loading entities"))
 
-//        DeserializeRocketEntities(raw["rocket-silo-rocket"] as LuaTable)
-//        val entity = (prototypes["entity"] as? LuaTable) ?: LuaValue.tableOf()
-//        for (prototypeName in entity.keys()) {
-//            deserializePrototypes(raw, prototypeName.tojstring(), DeserializeEntity)
-//        }
+        parent.entity.rocketEntitiesDeserializer.deserialize(raw["rocket-silo-rocket"].checktable())
+        val entities = prototypes["entity"].opttable(LuaValue.tableOf())
+        for (prototypeName in entities.keys()) {
+            deserializePrototypes(raw, prototypeName.tojstring(), parent.entity.entityDeserializer)
+        }
 
-//        val scriptEnabled = (data["script_enabled"] as? LuaTable) ?: LuaTable.tableOf()
-//        parseModYafcHandles(scriptEnabled)
+        val scriptEnabled = data["script_enabled"].opttable(LuaValue.tableOf())
+        parseModYafcHandles(scriptEnabled)
 
 //        progress.Report(("Post-processing", "Computing maps"))
 
@@ -286,7 +288,7 @@ class CommonDeserializer constructor(
         }
     }
 
-    private fun parseEnergy(energy: String): Float {
+    internal fun parseEnergy(energy: String): Float {
         val len = energy.length - 2
         if (len < 0) {
             return 0f
@@ -670,8 +672,16 @@ class CommonDeserializer constructor(
         localeType: String,
         construct: (name: String) -> T
     ): T where T : MutableFactorioObject {
+        return deserializeCommonWithNominal<T, T>(table, localeType, construct)
+    }
+
+    internal inline fun <reified Nominal, reified Actual> deserializeCommonWithNominal(
+        table: LuaTable,
+        localeType: String,
+        construct: (name: String) -> Actual
+    ): Actual where Nominal : MutableFactorioObject, Actual : MutableFactorioObject {
         val name = table["name"].tojstring()
-        val obj = parent.getObject(name, construct)
+        val obj = parent.getObjectWithNominal<Nominal, Actual>(name, construct)
         val factorioType = table["type"].optjstring("")
         obj.factorioType = factorioType
 
@@ -754,16 +764,28 @@ class CommonDeserializer constructor(
 
     private fun parseModYafcHandles(scriptEnabled: LuaTable) {
         for (key in scriptEnabled.keys()) {
-            val element = scriptEnabled[key]
-            if (element is LuaTable) {
+            val element = scriptEnabled[key].opttable(null)
+            if (element != null) {
                 val type = element["type"].tojstring()
                 val name = element["name"].tojstring()
 
-//                val existing = registeredObjects[name]?.tryCastToTypeByString(type)
-//                if (existing != null) {
-//                    rootAccessible.add(existing)
-//                }
+                val kotlinType = typeNameToType(type) ?: return
+                val existing = parent.registeredObjects[FactorioDataDeserializer.TypeWithName(kotlinType, name)]
+                if (existing != null) {
+                    parent.rootAccessible.add(existing)
+                }
             }
+        }
+    }
+
+    private fun typeNameToType(typeName: String): KType? {
+        return when (typeName) {
+            "item" -> typeOf<MutableItem>()
+            "fluid" -> typeOf<MutableFluid>()
+            "technology" -> typeOf<MutableTechnology>()
+            "recipe" -> typeOf<MutableRecipeImpl>()
+            "entity" -> typeOf<MutableEntityImpl>()
+            else -> null
         }
     }
 

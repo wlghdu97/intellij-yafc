@@ -3,10 +3,10 @@ package com.xhlab.yafc.parser.data.deserializer
 import com.xhlab.yafc.model.Project
 import com.xhlab.yafc.model.Version
 import com.xhlab.yafc.model.data.Fluid
-import com.xhlab.yafc.model.data.entity.Entity
-import com.xhlab.yafc.model.data.entity.EntityCrafter
 import com.xhlab.yafc.parser.data.deserializer.FactorioDataDeserializer.TypeWithName.Companion.typeWithName
 import com.xhlab.yafc.parser.data.mutable.*
+import com.xhlab.yafc.parser.data.mutable.entity.MutableEntity
+import com.xhlab.yafc.parser.data.mutable.entity.MutableEntityCrafter
 import org.luaj.vm2.LuaTable
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
@@ -24,9 +24,9 @@ class FactorioDataDeserializer constructor(
     internal val registeredObjects = hashMapOf<TypeWithName, MutableFactorioObject>()
 
     internal val fuels = DataBucket<String, MutableGoods>() // DataBucket
-    internal val fuelUsers = DataBucket<Entity, String>() // DataBucket
+    internal val fuelUsers = DataBucket<MutableEntity, String>() // DataBucket
     internal val recipeCategories = DataBucket<String, MutableRecipeOrTechnology>() // DataBucket
-    internal val recipeCrafters = DataBucket<EntityCrafter, String>() // DataBucket
+    internal val recipeCrafters = DataBucket<MutableEntityCrafter, String>() // DataBucket
     internal val recipeModules = DataBucket<MutableRecipeImpl, MutableItem>() // DataBucket
     internal val placeResults = hashMapOf<MutableItem, String>()
     internal val universalModules = arrayListOf<MutableItem>()
@@ -38,6 +38,7 @@ class FactorioDataDeserializer constructor(
 
     internal val common = CommonDeserializer(this, projectPath, data, prototypes, renderIcons)
     internal val context = ContextDeserializer(this, expensiveRecipes, factorioVersion)
+    internal val entity = EntityDeserializer(this, factorioVersion)
     internal val recipeAndTechnology = RecipeAndTechnologyDeserializer(this, expensiveRecipes)
 
     fun loadData(): Project {
@@ -61,8 +62,15 @@ class FactorioDataDeserializer constructor(
         name: String,
         construct: (name: String) -> T
     ): T where T : MutableFactorioObject {
-        val key = typeWithName<T>(name)
-        val existing = registeredObjects[key] as? T
+        return getObjectWithNominal<T, T>(name, construct)
+    }
+
+    internal inline fun <reified Nominal, reified Actual> getObjectWithNominal(
+        name: String,
+        construct: (name: String) -> Actual
+    ): Actual where Nominal : MutableFactorioObject, Actual : MutableFactorioObject {
+        val key = typeWithName<Nominal>(name)
+        val existing = registeredObjects[key] as? Actual
         if (existing != null) {
             return existing
         }

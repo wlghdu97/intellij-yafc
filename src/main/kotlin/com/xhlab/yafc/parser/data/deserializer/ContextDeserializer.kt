@@ -3,11 +3,12 @@ package com.xhlab.yafc.parser.data.deserializer
 import com.xhlab.yafc.model.Version
 import com.xhlab.yafc.model.data.*
 import com.xhlab.yafc.model.data.entity.Entity
-import com.xhlab.yafc.model.data.entity.EntityEnergy
 import com.xhlab.yafc.model.data.entity.EntityEnergyType
 import com.xhlab.yafc.parser.data.SpecialNames
 import com.xhlab.yafc.parser.data.deserializer.FactorioDataDeserializer.TypeWithName.Companion.typeWithName
 import com.xhlab.yafc.parser.data.mutable.*
+import com.xhlab.yafc.parser.data.mutable.entity.MutableEntity
+import com.xhlab.yafc.parser.data.mutable.entity.MutableEntityEnergy
 
 class ContextDeserializer constructor(
     private val parent: FactorioDataDeserializer,
@@ -47,11 +48,11 @@ class ContextDeserializer constructor(
         signal = "signal-R"
     )
 
-    private val voidEntityEnergy: EntityEnergy = EntityEnergy(
+    internal val voidEntityEnergy = MutableEntityEnergy(
         type = EntityEnergyType.VOID,
         effectivity = Float.POSITIVE_INFINITY
     )
-    private val laborEntityEnergy: EntityEnergy = EntityEnergy(
+    internal val laborEntityEnergy = MutableEntityEnergy(
         type = EntityEnergyType.LABOR,
         effectivity = Float.POSITIVE_INFINITY
     )
@@ -71,7 +72,7 @@ class ContextDeserializer constructor(
         flags = RecipeFlags.SCALE_PRODUCTION_WITH_POWER
     )
 
-    private lateinit var character: Entity
+    internal var character: MutableEntity? = null
 
     init {
         registerSpecial()
@@ -423,9 +424,5 @@ class ContextDeserializer constructor(
             "entity" -> this as? Entity
             else -> null
         }
-    }
-
-    companion object {
-        private val v0_18 = Version(0, 18)
     }
 }

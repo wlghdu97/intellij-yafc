@@ -4,8 +4,8 @@ import com.xhlab.yafc.model.data.FactorioIconPart
 import com.xhlab.yafc.model.data.FactorioId
 import com.xhlab.yafc.model.data.RecipeFlags
 import com.xhlab.yafc.model.data.Technology
-import com.xhlab.yafc.model.data.entity.Entity
 import com.xhlab.yafc.model.data.entity.EntityCrafter
+import com.xhlab.yafc.parser.data.mutable.entity.MutableEntity
 import javax.swing.Icon
 
 internal data class MutableRecipeImpl(
@@ -22,7 +22,7 @@ internal data class MutableRecipeImpl(
     override var crafters: List<EntityCrafter> = emptyList(),
     override var ingredients: List<MutableIngredient> = emptyList(),
     override var products: List<MutableProduct> = emptyList(),
-    override var sourceEntity: Entity? = null,
+    override var sourceEntity: MutableEntity? = null,
     override var mainProduct: MutableGoods? = null,
     override var time: Float = 0f,
     override var enabled: Boolean = false,

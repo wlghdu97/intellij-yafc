@@ -184,7 +184,7 @@ class RecipeAndTechnologyDeserializer constructor(
         return product
     }
 
-    private fun loadProductList(table: LuaTable): List<MutableProduct> {
+    internal fun loadProductList(table: LuaTable): List<MutableProduct> {
         val resultList = table["results"]
         if (resultList.istable()) {
             return resultList.checktable().keys().asSequence()

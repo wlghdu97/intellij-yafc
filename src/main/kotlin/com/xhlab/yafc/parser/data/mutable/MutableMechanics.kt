@@ -1,8 +1,8 @@
 package com.xhlab.yafc.parser.data.mutable
 
 import com.xhlab.yafc.model.data.*
-import com.xhlab.yafc.model.data.entity.Entity
 import com.xhlab.yafc.model.data.entity.EntityCrafter
+import com.xhlab.yafc.parser.data.mutable.entity.MutableEntity
 import javax.swing.Icon
 
 internal data class MutableMechanics(
@@ -20,7 +20,7 @@ internal data class MutableMechanics(
     override var crafters: List<EntityCrafter> = emptyList(),
     override var ingredients: List<MutableIngredient> = emptyList(),
     override var products: List<MutableProduct> = emptyList(),
-    override var sourceEntity: Entity? = null,
+    override var sourceEntity: MutableEntity? = null,
     override var mainProduct: MutableGoods? = null,
     override var time: Float = 0f,
     override var enabled: Boolean = false,
