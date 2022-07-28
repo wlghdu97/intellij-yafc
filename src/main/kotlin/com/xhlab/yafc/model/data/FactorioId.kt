@@ -1,3 +1,3 @@
 package com.xhlab.yafc.model.data
 
-enum class FactorioId
+data class FactorioId(val id: Int)

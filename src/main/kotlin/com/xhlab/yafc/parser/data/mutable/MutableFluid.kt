@@ -5,7 +5,7 @@ import com.xhlab.yafc.model.data.entity.Entity
 import javax.swing.Icon
 
 internal data class MutableFluid(
-    override val name: String,
+    override var name: String,
     override var factorioType: String? = null,
     override var originalName: String? = null,
     override var typeDotName: String? = null,
@@ -24,7 +24,7 @@ internal data class MutableFluid(
     override var miscSources: List<FactorioObject> = emptyList(),
     override var fuelFor: List<Entity> = emptyList(),
 ) : MutableGoods() {
-    var variants: MutableList<MutableFluid>? = null
+    var variants: ArrayList<MutableFluid> = arrayListOf()
 
     override val isPower: Boolean = false
     override val type: String = "Fluid"

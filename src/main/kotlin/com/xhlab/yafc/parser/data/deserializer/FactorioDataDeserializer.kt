@@ -2,7 +2,6 @@ package com.xhlab.yafc.parser.data.deserializer
 
 import com.xhlab.yafc.model.Project
 import com.xhlab.yafc.model.Version
-import com.xhlab.yafc.model.data.Fluid
 import com.xhlab.yafc.parser.data.deserializer.FactorioDataDeserializer.TypeWithName.Companion.typeWithName
 import com.xhlab.yafc.parser.data.mutable.*
 import com.xhlab.yafc.parser.data.mutable.entity.MutableEntity
@@ -32,7 +31,7 @@ class FactorioDataDeserializer constructor(
     internal val universalModules = arrayListOf<MutableItem>()
     internal val allModules = arrayListOf<MutableItem>()
     internal val sciencePacks = hashSetOf<MutableItem>()
-    internal val fluidVariants = hashMapOf<String, List<Fluid>>()
+    internal val fluidVariants = hashMapOf<String, List<MutableFluid>>()
     internal val formerAliases = hashMapOf<String, MutableFactorioObject>()
     internal val rocketInventorySizes = hashMapOf<String, Int>()
 

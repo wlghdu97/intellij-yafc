@@ -2,6 +2,7 @@ package com.xhlab.yafc.model.data
 
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.util.MathUtil.clamp
+import com.xhlab.yafc.parser.data.mutable.MutableFluid
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.*
@@ -74,8 +75,10 @@ object DataUtils {
 //    public static FavouritesComparer<Item> FavouriteModule { get private set }
 //
 //    public static readonly IComparer<FactorioObject> DeterministicComparer = new FactorioObjectDeterministicComparer()
-//    public static readonly IComparer<Fluid> FluidTemperatureComparer = new FluidTemperatureComparerImp()
-//
+
+    internal val fluidTemperatureComparer = Comparator<MutableFluid> { x, y ->
+        x.temperature.compareTo(y.temperature)
+    }
 
     fun getMilestoneOrder(id: FactorioId): ULong {
 //        val ms = Milestones.Instance
@@ -139,10 +142,6 @@ object DataUtils {
 //        public int Compare(FactorioObject x, FactorioObject y) => x.id.CompareTo(y.id) // id comparison is deterministic because objects are sorted deterministicaly
 //    }
 //
-//    private class FluidTemperatureComparerImp : IComparer<Fluid>
-//    {
-//        public int Compare(Fluid x, Fluid y) => x.temperature.CompareTo(y.temperature)
-//    }
 
     class FactorioObjectComparer<T> constructor(
         private val similarComparator: Comparator<T>

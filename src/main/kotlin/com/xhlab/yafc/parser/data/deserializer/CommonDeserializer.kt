@@ -2,7 +2,9 @@ package com.xhlab.yafc.parser.data.deserializer
 
 import com.intellij.openapi.diagnostic.Logger
 import com.xhlab.yafc.model.Project
+import com.xhlab.yafc.model.data.DataUtils
 import com.xhlab.yafc.model.data.FactorioIconPart
+import com.xhlab.yafc.model.data.FactorioId
 import com.xhlab.yafc.model.data.TemperatureRange
 import com.xhlab.yafc.parser.FactorioLocalization
 import com.xhlab.yafc.parser.data.SpecialNames
@@ -57,30 +59,33 @@ class CommonDeserializer constructor(
         return split
     }
 
-//    private void UpdateSplitFluids()
-//    {
-//        var processedFluidLists = new HashSet<List<Fluid>>()
-//
-//        foreach (var fluid in allObjects.OfType<Fluid>())
-//        {
-//            if (fluid.temperature == 0)
-//                fluid.temperature = fluid.temperatureRange.min
-//            if (fluid.variants == null || !processedFluidLists.Add(fluid.variants)) continue
-//            fluid.variants.Sort(DataUtils.FluidTemperatureComparer)
-//            fluidVariants[fluid.type + "." + fluid.name] = fluid.variants
-//            foreach (var variant in fluid.variants)
-//            {
-//                AddTemperatureToFluidIcon(variant)
-//                variant.name += "@" + variant.temperature
-//            }
-//        }
-//    }
+    private fun updateSplitFluids() {
+        val processedFluidLists = hashSetOf<String>()
 
-//    private void AddTemperatureToFluidIcon(Fluid fluid)
-//    {
-//        var iconStr = fluid.temperature + "d"
-//        fluid.iconSpec = fluid.iconSpec.Concat(iconStr.Take(4).Select((x, n) => new FactorioIconPart {path = "__.__/"+x, y=-16, x = n*7-12, scale = 0.28f})).ToArray()
-//    }
+        for (fluid in parent.allObjects.filterIsInstance<MutableFluid>()) {
+            if (fluid.temperature == 0) {
+                fluid.temperature = fluid.temperatureRange.min
+            }
+            val variantName = "${fluid.type}.${fluid.name}".substringBefore("@")
+            if (fluid.variants.isEmpty() || processedFluidLists.contains(variantName)) {
+                continue
+            }
+            fluid.variants.sortWith(DataUtils.fluidTemperatureComparer)
+            parent.fluidVariants[variantName] = fluid.variants
+            for (variant in fluid.variants) {
+                addTemperatureToFluidIcon(variant)
+                variant.name += "@" + variant.temperature
+            }
+        }
+    }
+
+    private fun addTemperatureToFluidIcon(fluid: MutableFluid) {
+        val iconStr = "${fluid.temperature}d"
+        val subIcons = iconStr.take(4).mapIndexed { n, x ->
+            FactorioIconPart("__.__/$x", x = n * 7f - 12, y = -16f, scale = 0.28f)
+        }
+        fluid.iconSpec = (fluid.iconSpec ?: emptyList()) + subIcons
+    }
 
     fun loadData(): Project {
 //        progress.Report(("Loading", "Loading items"))
@@ -119,11 +124,18 @@ class CommonDeserializer constructor(
 
         // Deterministically sort all objects
 
-//        allObjects.Sort((a, b) => a.sortingOrder == b.sortingOrder ? string.Compare(a.typeDotName, b.typeDotName, StringComparison.Ordinal) : a.sortingOrder - b.sortingOrder)
-//        for (var i = 0 i < allObjects.Count i++) {
-//            allObjects[i].id = (FactorioId) i
-//        }
-//        UpdateSplitFluids()
+        parent.allObjects.sortWith { x, y ->
+            if (x.sortingOrder == y.sortingOrder) {
+                (x.typeDotName ?: "").compareTo(y.typeDotName ?: "", true) // huh.
+            } else {
+                x.sortingOrder.ordinal - y.sortingOrder.ordinal
+            }
+        }
+        parent.allObjects.forEachIndexed { idx, obj ->
+            obj.id = FactorioId(idx)
+        }
+
+        updateSplitFluids()
 //        var iconRenderTask = renderIcons ? Task.Run(RenderIcons) : Task.CompletedTask
 //        UpdateRecipeIngredientFluids()
 //        UpdateRecipeCatalysts()
@@ -424,13 +436,14 @@ class CommonDeserializer constructor(
 
     private fun splitFluid(basic: MutableFluid, temperature: Int): MutableFluid {
         logger.info("Splitting fluid ${basic.name} at $temperature")
-        if (basic.variants == null) {
-            basic.variants = mutableListOf(basic)
+        if (basic.variants.isEmpty()) {
+            basic.variants = arrayListOf(basic)
         }
 
         val copy = basic.copy().apply {
             setTemperature(temperature)
-            variants?.add(this)
+            variants = basic.variants // link basic's variants array
+            variants.add(this)
         }
 
         if (copy.fuelValue > 0f) {
