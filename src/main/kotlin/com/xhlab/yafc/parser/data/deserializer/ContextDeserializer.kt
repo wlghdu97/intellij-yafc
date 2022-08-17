@@ -1,15 +1,10 @@
 package com.xhlab.yafc.parser.data.deserializer
 
-import com.xhlab.yafc.model.Version
 import com.xhlab.yafc.model.data.*
 import com.xhlab.yafc.parser.data.SpecialNames
 import com.xhlab.yafc.parser.data.deserializer.FactorioDataDeserializer.TypeWithName.Companion.typeWithName
 
-class ContextDeserializer constructor(
-    private val parent: FactorioDataDeserializer,
-    private val expensiveRecipes: Boolean,
-    private val factorioVersion: Version
-) {
+class ContextDeserializer constructor(private val parent: FactorioDataDeserializer) {
     private val electricity: MutableSpecial = createSpecialObject(
         isPower = true,
         name = SpecialNames.electricity,
@@ -59,18 +54,20 @@ class ContextDeserializer constructor(
         products = listOf(MutableProduct(electricity, 1f)),
         flags = RecipeFlags.SCALE_PRODUCTION_WITH_POWER
     )
-    private val reactorProduction: MutableRecipe = createSpecialRecipe(
-        production = heat,
-        category = SpecialNames.reactorRecipe,
-        hint = "generating",
-        products = listOf(MutableProduct(heat, 1f)),
-        flags = RecipeFlags.SCALE_PRODUCTION_WITH_POWER
-    )
 
     internal var character: MutableEntity? = null
 
     init {
         registerSpecial()
+
+        // reactor production
+        createSpecialRecipe(
+            production = heat,
+            category = SpecialNames.reactorRecipe,
+            hint = "generating",
+            products = listOf(MutableProduct(heat, 1f)),
+            flags = RecipeFlags.SCALE_PRODUCTION_WITH_POWER
+        )
     }
 
     private fun createSpecialObject(
@@ -101,56 +98,76 @@ class ContextDeserializer constructor(
 
     private fun skip(from: Int, sortOrder: FactorioObjectSortOrder): Int {
         for (idx in from until parent.allObjects.size) {
-            if (parent.allObjects[from].sortingOrder != sortOrder) {
-                break
+            if (parent.allObjects[idx].sortingOrder != sortOrder) {
+                return idx
             }
         }
 
-        return from
+        return parent.allObjects.size
     }
 
-//    private void ExportBuiltData()
-//    {
-//        Database.rootAccessible = rootAccessible.ToArray()
-//        Database.objectsByTypeName = allObjects.ToDictionary(x => x.typeDotName = x.type + "." + x.name)
-//        foreach (var alias in formerAliases)
-//        Database.objectsByTypeName.TryAdd(alias.Key, alias.Value)
-//        Database.allSciencePacks = sciencePacks.ToArray()
-//        Database.voidEnergy = voidEnergy
-//        Database.electricity = electricity
-//        Database.electricityGeneration = generatorProduction
-//        Database.heat = heat
-//        Database.character = character
-//        var firstSpecial = 0
-//        var firstItem = Skip(firstSpecial, FactorioObjectSortOrder.SpecialGoods)
-//        var firstFluid = Skip(firstItem, FactorioObjectSortOrder.Items)
-//        var firstRecipe = Skip(firstFluid, FactorioObjectSortOrder.Fluids)
-//        var firstMechanics = Skip(firstRecipe, FactorioObjectSortOrder.Recipes)
-//        var firstTechnology = Skip(firstMechanics, FactorioObjectSortOrder.Mechanics)
-//        var firstEntity = Skip(firstTechnology, FactorioObjectSortOrder.Technologies)
-//        var last = Skip(firstEntity, FactorioObjectSortOrder.Entities)
-//        if (last != allObjects.Count)
-//            throw new Exception("Something is not right")
-//        Database.objects = new FactorioIdRange<FactorioObject>(0, last, allObjects)
-//        Database.specials = new FactorioIdRange<Special>(firstSpecial, firstItem, allObjects)
-//        Database.items = new FactorioIdRange<Item>(firstItem, firstFluid, allObjects)
-//        Database.fluids = new FactorioIdRange<Fluid>(firstFluid, firstRecipe, allObjects)
-//        Database.goods = new FactorioIdRange<Goods>(firstSpecial, firstRecipe, allObjects)
-//        Database.recipes = new FactorioIdRange<Recipe>(firstRecipe, firstTechnology, allObjects)
-//        Database.mechanics = new FactorioIdRange<Mechanics>(firstMechanics, firstTechnology, allObjects)
-//        Database.recipesAndTechnologies = new FactorioIdRange<RecipeOrTechnology>(firstRecipe, firstEntity, allObjects)
-//        Database.technologies = new FactorioIdRange<Technology>(firstTechnology, firstEntity, allObjects)
-//        Database.entities = new FactorioIdRange<Entity>(firstEntity, last, allObjects)
-//        Database.fluidVariants = fluidVariants
-//
-//        Database.allModules = allModules
-//        Database.allBeacons = Database.entities.all.OfType<EntityBeacon>().ToArray()
-//        Database.allCrafters = Database.entities.all.OfType<EntityCrafter>().ToArray()
-//        Database.allBelts = Database.entities.all.OfType<EntityBelt>().ToArray()
-//        Database.allInserters = Database.entities.all.OfType<EntityInserter>().ToArray()
-//        Database.allAccumulators = Database.entities.all.OfType<EntityAccumulator>().ToArray()
-//        Database.allContainers = Database.entities.all.OfType<EntityContainer>().ToArray()
-//    }
+    internal fun exportBuiltData(): Database = with(parent) {
+        allObjects.forEach {
+            it.typeDotName = "${it.type}.${it.name}"
+        }
+
+        val objectsByTypeName = allObjects.associateBy { it.typeDotName }.toMutableMap()
+        for (alias in formerAliases) {
+            objectsByTypeName[alias.key] = alias.value
+        }
+
+        val firstSpecial = 0
+        val firstItem = skip(firstSpecial, FactorioObjectSortOrder.SPECIAL_GOODS)
+        val firstFluid = skip(firstItem, FactorioObjectSortOrder.ITEMS)
+        val firstRecipe = skip(firstFluid, FactorioObjectSortOrder.FLUIDS)
+        val firstMechanics = skip(firstRecipe, FactorioObjectSortOrder.RECIPES)
+        val firstTechnology = skip(firstMechanics, FactorioObjectSortOrder.MECHANICS)
+        val firstEntity = skip(firstTechnology, FactorioObjectSortOrder.TECHNOLOGIES)
+        val last = skip(firstEntity, FactorioObjectSortOrder.ENTITIES)
+        if (last != allObjects.size) {
+            throw RuntimeException("Something is not right")
+        }
+
+        val allObjs = FactorioIdRange<FactorioObject>(0, last, allObjects)
+        val specials = FactorioIdRange<Special>(firstSpecial, firstItem, allObjects)
+        val items = FactorioIdRange<Item>(firstItem, firstFluid, allObjects)
+        val fluids = FactorioIdRange<Fluid>(firstFluid, firstRecipe, allObjects)
+        val goods = FactorioIdRange<Goods>(firstSpecial, firstRecipe, allObjects)
+        val recipes = FactorioIdRange<Recipe>(firstRecipe, firstTechnology, allObjects)
+        val mechanics = FactorioIdRange<Mechanics>(firstMechanics, firstTechnology, allObjects)
+        val recipesAndTechnologies = FactorioIdRange<RecipeOrTechnology>(firstRecipe, firstEntity, allObjects)
+        val technologies = FactorioIdRange<Technology>(firstTechnology, firstEntity, allObjects)
+        val entities = FactorioIdRange<Entity>(firstEntity, last, allObjects)
+
+        return Database(
+            rootAccessible = rootAccessible,
+            allSciencePacks = sciencePacks.toList(),
+            objectsByTypeName = objectsByTypeName,
+            fluidVariants = fluidVariants,
+            voidEnergy = voidEnergy,
+            electricity = electricity,
+            electricityGeneration = generatorProduction,
+            heat = heat,
+            character = requireNotNull(character),
+            allCrafters = entities.all.filterIsInstance<EntityCrafter>(),
+            allModules = allModules,
+            allBeacons = entities.all.filterIsInstance<EntityBeacon>(),
+            allBelts = entities.all.filterIsInstance<EntityBelt>(),
+            allInserters = entities.all.filterIsInstance<EntityInserter>(),
+            allAccumulators = entities.all.filterIsInstance<EntityAccumulator>(),
+            allContainers = entities.all.filterIsInstance<EntityContainer>(),
+            objects = allObjs,
+            goods = goods,
+            specials = specials,
+            items = items,
+            fluids = fluids,
+            recipes = recipes,
+            mechanics = mechanics,
+            recipesAndTechnologies = recipesAndTechnologies,
+            technologies = technologies,
+            entities = entities
+        )
+    }
 
     private fun isBarrelingRecipe(barreling: Recipe, unbarreling: Recipe): Boolean {
         val product = barreling.products[0]
@@ -195,182 +212,198 @@ class ContextDeserializer constructor(
         return true
     }
 
-//    private fun calculateMaps() {
-//        val itemUsages = DataBucket<Goods, Recipe>()
-//        val itemProduction = DataBucket<Goods, Recipe>()
-//        val miscSources = DataBucket<Goods, FactorioObject>()
-//        val entityPlacers = DataBucket<Entity, Item>()
-//        val recipeUnlockers = DataBucket<Recipe, Technology>()
-//        // Because actual recipe availibility may be different than just "all recipes from that category" because of item slot limit and fluid usage restriction, calculate it here
-//        val actualRecipeCrafters = DataBucket<RecipeOrTechnology, EntityCrafter>()
-//        val usageAsFuel = DataBucket<Goods, Entity>()
-//        val allRecipes = arrayListOf<Recipe>()
-//        val allMechanics = arrayListOf<Mechanics>()
-//
-//        // step 1 - collect maps
-//
-//        for (o in allObjects) {
-//            when (o) {
-//                is Technology -> {
-//                    for (recipe in o.unlockRecipes) {
-//                        recipeUnlockers[recipe] = o
-//                    }
-//                }
-//                is Recipe -> {
-//                    allRecipes.add(o)
-//
-//                    for (product in o.products) {
-//                        if (product.amount > 0) {
-//                            itemProduction[product.goods] = o
-//                        }
-//                    }
-//
-//                    for (ingredient in o.ingredients) {
-//                        if (ingredient.variants == null) {
-//                            itemUsages[ingredient.goods] = o
-//                        } else {
-//                            ingredient.goods = ingredient.variants[0]
-//                            for (variant in ingredient.variants) {
-//                                itemUsages[variant] = o
-//                            }
-//                        }
-//                    }
-//
-//                    if (o is Mechanics) {
-//                        allMechanics.add(o)
-//                    }
-//                }
-//                is Item -> {
-//                    val placeResultStr = placeResults[o]
-//                    if (placeResultStr != null) {
-//                        o.placeResult = getObject(placeResultStr) as Entity
-//                        entityPlacers.add(o.placeResult, o)
-//                    }
-//
-//                    if (o.fuelResult != null) {
-//                        miscSources.add(o.fuelResult, o)
-//                    }
-//                }
-//                is Entity -> {
-//                    for (product in entity.loot) {
-//                        miscSources.add(product.goods, o)
-//                    }
-//
-//                    if (o is EntityCrafter) {
-//                        o.recipes = recipeCrafters.getRaw(o).SelectMany(x => recipeCategories . GetRaw (x).Where(y => y . CanFit (crafter.itemInputs, crafter.fluidInputs, crafter.inputs))).ToArray()
-//                        for (recipe in crafter.recipes) {
-//                            actualRecipeCrafters[recipe] = o
-//                        }
-//                    }
-//
-//                    if (o.energy != null && o.energy != voidEntityEnergy) {
-//                        val fuelList = fuelUsers.GetRaw(entity).SelectMany(fuels.GetRaw)
-//                        if (entity.energy.type == EntityEnergyType.FluidHeat) {
-//                            fuelList =
-//                                fuelList.Where(x => x is Fluid f && entity.energy.acceptedTemperature.Contains(f.temperature) && f.temperature > entity.energy.workingTemperature.min)
-//                        }
-//
-//                        val fuelListArr = fuelList.ToArray()
-//                        o.energy.fuels = fuelListArr
-//
-//                        for (fuel in fuelListArr) {
-//                            usageAsFuel[fuel] = o
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//
-//        voidEntityEnergy.fuels = new Goods[] {voidEnergy}
-//
-//        actualRecipeCrafters.SealAndDeduplicate()
-//        usageAsFuel.SealAndDeduplicate()
-//        recipeUnlockers.SealAndDeduplicate()
-//        entityPlacers.SealAndDeduplicate()
-//
-//        // step 2 - fill maps
-//
-//        for (o in allObjects) {
-//            when (o) {
-//                case RecipeOrTechnology recipeOrTechnology:
-//                    if (recipeOrTechnology is Recipe recipe)
-//            {
-//                recipe.FallbackLocalization(recipe.mainProduct, "A recipe to create")
-//                recipe.technologyUnlock = recipeUnlockers.GetArray(recipe)
-//            }
-//                recipeOrTechnology.crafters = actualRecipeCrafters.GetArray(recipeOrTechnology)
-//                    break
-//                    case Goods goods:
-//                goods.usages = itemUsages.GetArray(goods)
-//                goods.production = itemProduction.GetArray(goods)
-//                        goods.miscSources = miscSources.GetArray(goods)
-//                    if (o is Item item)
-//            {
-//                if (item.placeResult != null)
-//                    item.FallbackLocalization(item.placeResult, "An item to build")
-//            } else if (o is Fluid fluid && fluid.variants != null)
-//            {
-//                var temperatureDescr = "Temperature: " + fluid.temperature + "°"
-//                if (fluid.locDescr == null)
-//                    fluid.locDescr = temperatureDescr
-//                else fluid.locDescr = temperatureDescr + "\n" + fluid.locDescr
-//            }
-//
-//                goods.fuelFor = usageAsFuel.GetArray(goods)
-//                    break
-//                    case Entity entity:
-//                entity.itemsToPlace = entityPlacers.GetArray(entity)
-//                break
-//            }
-//        }
-//
-//        foreach (var mechanic in allMechanics)
-//        {
-//            mechanic.locName = mechanic.source.locName + " " + mechanic.locName
-//            mechanic.locDescr = mechanic.source.locDescr
-//            mechanic.iconSpec = mechanic.source.iconSpec
-//        }
-//
-//        // step 3 - detect barreling/unbarreling and voiding recipes
-//        foreach (var recipe in allRecipes)
-//        {
-//            if (recipe.specialType != FactorioObjectSpecialType.Normal)
-//                continue
-//            if (recipe.products.Length == 0)
-//            {
-//                recipe.specialType = FactorioObjectSpecialType.Voiding
-//                continue
-//            }
-//            if (recipe.products.Length != 1 || recipe.ingredients.Length == 0)
-//                continue
-//            if (recipe.products[0].goods is Item barrel)
-//            {
-//                foreach (var usage in barrel.usages)
-//                {
-//                    if (IsBarrelingRecipe(recipe, usage))
-//                    {
-//                        recipe.specialType = FactorioObjectSpecialType.Barreling
-//                        usage.specialType = FactorioObjectSpecialType.Unbarreling
-//                        barrel.specialType = FactorioObjectSpecialType.FilledBarrel
-//                    }
-//                }
-//            }
-//        }
-//
-//        foreach (var any in allObjects)
-//        {
-//            if (any.locName == null)
-//                any.locName = any.name
-//        }
-//
-//        foreach (var (_, list) in fluidVariants)
-//        {
-//            foreach (var fluid in list)
-//            {
-//                fluid.locName += " " + fluid.temperature + "°"
-//            }
-//        }
-//    }
+    internal fun calculateMaps() {
+        val itemUsages = DataBucket<MutableGoods, MutableRecipe>()
+        val itemProduction = DataBucket<MutableGoods, MutableRecipe>()
+        val miscSources = DataBucket<MutableGoods, MutableFactorioObject>()
+        val entityPlacers = DataBucket<MutableEntity, MutableItem>()
+        val recipeUnlockers = DataBucket<MutableRecipe, MutableTechnology>()
+        // Because actual recipe availability may be different from just "all recipes from that category" because of item slot limit and fluid usage restriction, calculate it here
+        val actualRecipeCrafters = DataBucket<MutableRecipeOrTechnology, MutableEntityCrafter>()
+        val usageAsFuel = DataBucket<MutableGoods, MutableEntity>()
+        val allRecipes = arrayListOf<MutableRecipe>()
+        val allMechanics = arrayListOf<MutableMechanics>()
+
+        // step 1 - collect maps
+
+        for (idx in 0 until parent.allObjects.size) {
+            when (val o = parent.allObjects[idx]) {
+                is MutableTechnology -> {
+                    for (recipe in o.unlockRecipes) {
+                        recipeUnlockers.add(recipe, o)
+                    }
+                }
+
+                is MutableRecipe -> {
+                    allRecipes.add(o)
+
+                    for (product in o.products) {
+                        if (product.amount > 0) {
+                            itemProduction.add(product.goods, o)
+                        }
+                    }
+
+                    for (ingredient in o.ingredients) {
+                        val variants = ingredient.variants
+                        if (variants == null) {
+                            itemUsages.add(ingredient.goods, o)
+                        } else {
+                            ingredient.goods = variants[0]
+                            for (variant in variants) {
+                                itemUsages.add(variant, o)
+                            }
+                        }
+                    }
+
+                    if (o is MutableMechanics) {
+                        allMechanics.add(o)
+                    }
+                }
+
+                is MutableItem -> {
+                    val placeResultStr = parent.placeResults[o]
+                    if (placeResultStr != null) {
+                        val placeResult = parent
+                            .getObjectWithNominal<MutableEntity, MutableEntity>(placeResultStr, ::MutableEntityImpl)
+                        o.placeResult = placeResult
+                        entityPlacers.add(placeResult, o)
+                    }
+
+                    val fuelResult = o.fuelResult
+                    if (fuelResult != null) {
+                        miscSources.add(fuelResult, o)
+                    }
+                }
+
+                is MutableEntity -> {
+                    for (product in o.loot) {
+                        miscSources.add(product.goods, o)
+                    }
+
+                    if (o is MutableEntityCrafterImpl) {
+                        o.recipes = parent.recipeCrafters.getRaw(o).flatMap {
+                            val list = parent.recipeCategories.getRaw(it).filter { category ->
+                                val fit = category.canFit(o.itemInputs, o.fluidInputs, o.inputs)
+                                fit
+                            }
+                            list
+                        }
+                        o.recipes.forEach { recipe ->
+                            actualRecipeCrafters.add(recipe, o, true)
+                        }
+                    }
+
+                    val energy = o.energy
+                    if (energy != null && o.energy != voidEntityEnergy) {
+                        var fuelList = parent.fuelUsers.getRaw(o).flatMap { parent.fuels.getRaw(it) }
+                        if (energy.type == EntityEnergyType.FLUID_HEAT) {
+                            fuelList = fuelList.asSequence().filterIsInstance<MutableFluid>().filter {
+                                energy.acceptedTemperature.contains(it.temperature) && it.temperature > energy.workingTemperature.min
+                            }.toList()
+                        }
+
+                        o.energy?.fuels = fuelList
+
+                        for (fuel in fuelList) {
+                            usageAsFuel.add(fuel, o)
+                        }
+                    }
+                }
+
+                else -> Unit
+            }
+        }
+
+        voidEntityEnergy.fuels = listOf(parent.context.voidEnergy)
+
+        actualRecipeCrafters.sealAndDeduplicate()
+        usageAsFuel.sealAndDeduplicate()
+        recipeUnlockers.sealAndDeduplicate()
+        entityPlacers.sealAndDeduplicate()
+
+        // step 2 - fill maps
+
+        for (idx in 0 until parent.allObjects.size) {
+            when (val o = parent.allObjects[idx]) {
+                is MutableRecipeOrTechnology -> {
+                    if (o is MutableRecipe) {
+                        o.fallbackLocalization(o.mainProduct, "A recipe to create")
+                        o.technologyUnlock = recipeUnlockers.getList(o)
+                    }
+                    o.crafters = actualRecipeCrafters.getList(o)
+                }
+
+                is MutableGoods -> {
+                    o.usages = itemUsages.getList(o)
+                    o.production = itemProduction.getList(o)
+                    o.miscSources = miscSources.getList(o)
+
+                    if (o is MutableItem) {
+                        if (o.placeResult != null) {
+                            o.fallbackLocalization(o.placeResult, "An item to build")
+                        }
+                    } else if (o is MutableFluid && o.variants.isNotEmpty()) {
+                        val temperatureDescr = "Temperature: " + o.temperature + "°"
+                        if (o.locDescr.isEmpty()) {
+                            o.locDescr = temperatureDescr
+                        } else {
+                            o.locDescr = temperatureDescr + "\n" + o.locDescr
+                        }
+                    }
+
+                    o.fuelFor = usageAsFuel.getList(o)
+                }
+
+                is MutableEntity -> {
+                    o.itemsToPlace = entityPlacers.getList(o)
+                }
+            }
+        }
+
+        for (mechanic in allMechanics) {
+            mechanic.locName = mechanic.source.locName + " " + mechanic.locName
+            mechanic.locDescr = mechanic.source.locDescr
+            mechanic.iconSpec = mechanic.source.iconSpec
+        }
+
+        // step 3 - detect barreling/unbarreling and voiding recipes
+        for (recipe in allRecipes) {
+            if (recipe.specialType != FactorioObjectSpecialType.NORMAL) {
+                continue
+            }
+            if (recipe.products.isEmpty()) {
+                recipe.specialType = FactorioObjectSpecialType.VOIDING
+                continue
+            }
+            if (recipe.products.size != 1 || recipe.ingredients.isEmpty()) {
+                continue
+            }
+
+            val barrel = recipe.products[0].goods as? MutableItem
+            if (barrel != null) {
+                for (usage in barrel.usages) {
+                    if (isBarrelingRecipe(recipe, usage)) {
+                        recipe.specialType = FactorioObjectSpecialType.BARRELING
+                        usage.specialType = FactorioObjectSpecialType.UNBARRELING
+                        barrel.specialType = FactorioObjectSpecialType.FILLED_BARREL
+                    }
+                }
+            }
+        }
+
+        for (idx in 0 until parent.allObjects.size) {
+            val any = parent.allObjects[idx]
+            if (any.locName.isEmpty()) {
+                any.locName = any.name
+            }
+        }
+
+        for (list in parent.fluidVariants.values) {
+            for (fluid in list) {
+                fluid.locName += " " + fluid.temperature + "°"
+            }
+        }
+    }
 
     internal fun createSpecialRecipe(
         production: MutableFactorioObject,
@@ -403,16 +436,5 @@ class ContextDeserializer constructor(
         parent.recipeCategories.add(category, recipe)
 
         return recipe
-    }
-
-    private fun FactorioObject.tryCastToTypeByString(typeName: String): FactorioObject? {
-        return when (typeName) {
-            "item" -> this as? Item
-            "fluid" -> this as? Fluid
-            "technology" -> this as? Technology
-            "recipe" -> this as? Recipe
-            "entity" -> this as? Entity
-            else -> null
-        }
     }
 }

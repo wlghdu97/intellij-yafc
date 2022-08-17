@@ -26,7 +26,7 @@ class ParserExecutor(
     }
 
     fun run() {
-        dataSource.parse(factorioPath, modPath, projectPath, false, "en")
+        dataSource.parse(factorioPath, modPath, projectPath, false, "en", false)
     }
 
     override fun progressChanged(title: String, description: String) {

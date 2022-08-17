@@ -34,7 +34,7 @@ class FactorioDataDeserializer constructor(
     internal val rocketInventorySizes = hashMapOf<String, Int>()
 
     internal val common = CommonDeserializer(this, projectPath, data, prototypes, renderIcons)
-    internal val context = ContextDeserializer(this, expensiveRecipes, factorioVersion)
+    internal val context = ContextDeserializer(this)
     internal val entity = EntityDeserializer(this, factorioVersion)
     internal val recipeAndTechnology = RecipeAndTechnologyDeserializer(this, expensiveRecipes)
 

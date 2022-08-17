@@ -7,6 +7,8 @@ import com.xhlab.yafc.parser.FactorioLocalization
 import com.xhlab.yafc.parser.data.SpecialNames
 import org.luaj.vm2.LuaTable
 import org.luaj.vm2.LuaValue
+import javax.swing.Icon
+import javax.swing.ImageIcon
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
@@ -131,11 +133,15 @@ class CommonDeserializer constructor(
         }
 
         updateSplitFluids()
-//        var iconRenderTask = renderIcons ? Task.Run(RenderIcons) : Task.CompletedTask
-//        UpdateRecipeIngredientFluids()
-//        UpdateRecipeCatalysts()
-//        CalculateMaps()
-//        ExportBuiltData()
+
+        if (renderIcons) {
+            renderIcons()
+        }
+
+        parent.recipeAndTechnology.updateRecipeIngredientFluids()
+        parent.recipeAndTechnology.updateRecipeCatalysts()
+        parent.context.calculateMaps()
+        val database = parent.context.exportBuiltData()
 
 //        progress.Report(("Post-processing", "Calculating dependencies"))
 
@@ -158,131 +164,17 @@ class CommonDeserializer constructor(
 
 //    private volatile IProgress<(string, string)> iconRenderedProgress
 
-//    private Icon CreateSimpleIcon(Dictionary<(string mod, string path),IntPtr> cache, string graphicsPath)
-//    {
-//        return CreateIconFromSpec(cache, new FactorioIconPart {path = "__core__/graphics/" + graphicsPath + ".png"})
-//    }
+    private fun createSimpleIcon(cache: HashMap<ModPathPair, ImageIcon?>, graphicsPath: String): Icon {
+        return createIconFromSpec(cache, FactorioIconPart("__core__/graphics/$graphicsPath.png"))
+    }
 
-//    private void RenderIcons()
-//    {
-//        var cache = new Dictionary<(string mod, string path), IntPtr>()
-//        try
-//        {
-//            foreach (var digit in "0123456789d")
-//            cache[(".", digit.ToString())] = SDL_image.IMG_Load("Data/Digits/" + digit + ".png")
-//            DataUtils.NoFuelIcon = CreateSimpleIcon(cache, "fuel-icon-red")
-//            DataUtils.WarningIcon = CreateSimpleIcon(cache, "warning-icon")
-//            DataUtils.HandIcon = CreateSimpleIcon(cache, "hand")
-//
-//            var simpleSpritesCache = new Dictionary<string, Icon>()
-//            var rendered = 0
-//
-//            foreach (var o in allObjects)
-//            {
-//                if (++rendered % 100 == 0)
-//                    iconRenderedProgress?.Report(("Rendering icons", $"{rendered}/{allObjects.Count}"))
-//                if (o.iconSpec != null && o.iconSpec.Length > 0)
-//                {
-//                    var simpleSprite = o.iconSpec.Length == 1 && o.iconSpec[0].IsSimple()
-//                    if (simpleSprite && simpleSpritesCache.TryGetValue(o.iconSpec[0].path, out var icon))
-//                    {
-//                        o.icon = icon
-//                        continue
-//                    }
-//
-//                    try
-//                    {
-//                        o.icon = CreateIconFromSpec(cache, o.iconSpec)
-//                        if (simpleSprite)
-//                            simpleSpritesCache[o.iconSpec[0].path] = o.icon
-//                    }
-//                    catch (Exception ex)
-//                    {
-//                        Console.Error.WriteException(ex)
-//                    }
-//                }
-//                else if (o is Recipe recipe && recipe.mainProduct != null)
-//                o.icon = recipe.mainProduct.icon
-//            }
-//        }
-//        finally
-//        {
-//            foreach (var (_, image) in cache)
-//            {
-//                if (image != IntPtr.Zero)
-//                    SDL.SDL_FreeSurface(image)
-//            }
-//        }
-//    }
+    private fun renderIcons() {
+        TODO()
+    }
 
-//    private unsafe Icon CreateIconFromSpec(Dictionary<(string mod, string path),IntPtr> cache, params FactorioIconPart[] spec)
-//    {
-//        const int IconSize = IconCollection.IconSize
-//        var targetSurface = SDL.SDL_CreateRGBSurfaceWithFormat(0, IconSize, IconSize, 0, SDL.SDL_PIXELFORMAT_RGBA8888)
-//        SDL.SDL_SetSurfaceBlendMode(targetSurface, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND)
-//        foreach (var icon in spec)
-//        {
-//            var modpath = FactorioDataSource.ResolveModPath("", icon.path)
-//            if (!cache.TryGetValue(modpath, out var image))
-//            {
-//                var imageSource = FactorioDataSource.ReadModFile(modpath.mod, modpath.path)
-//                if (imageSource == null)
-//                    image = cache[modpath] = IntPtr.Zero
-//                else
-//                {
-//                    fixed (byte* data = imageSource)
-//                    {
-//                        var src = SDL.SDL_RWFromMem((IntPtr) data, imageSource.Length)
-//                        image = SDL_image.IMG_Load_RW(src, (int) SDL.SDL_bool.SDL_TRUE)
-//                        if (image != IntPtr.Zero)
-//                        {
-//                            ref var surface = ref RenderingUtils.AsSdlSurface(image)
-//                            var format = Unsafe.AsRef<SDL.SDL_PixelFormat>((void*) surface.format).format
-//                            if (format != SDL.SDL_PIXELFORMAT_RGB24 && format != SDL.SDL_PIXELFORMAT_RGBA8888)
-//                            {
-//                                // SDL is failing to blit patelle surfaces, converting them
-//                                var old = image
-//                                image = SDL.SDL_ConvertSurfaceFormat(old, SDL.SDL_PIXELFORMAT_RGBA8888, 0)
-//                                SDL.SDL_FreeSurface(old)
-//                            }
-//
-//                            if (surface.h > IconSize * 2)
-//                            {
-//                                image = SoftwareScaler.DownscaleIcon(image, IconSize)
-//                            }
-//                        }
-//                        cache[modpath] = image
-//                    }
-//                }
-//            }
-//            if (image == IntPtr.Zero)
-//                continue
-//
-//            ref var sdlSurface = ref RenderingUtils.AsSdlSurface(image)
-//            var targetSize = icon.scale == 1f ? IconSize : MathUtils.Ceil(icon.size * icon.scale) * (IconSize/32) // TODO research formula
-//            SDL.SDL_SetSurfaceColorMod(image, MathUtils.FloatToByte(icon.r), MathUtils.FloatToByte(icon.g), MathUtils.FloatToByte(icon.b))
-//            //SDL.SDL_SetSurfaceAlphaMod(image, MathUtils.FloatToByte(icon.a))
-//            var basePosition = (IconSize - targetSize) / 2
-//            var targetRect = new SDL.SDL_Rect
-//                    {
-//                        x = basePosition,
-//                        y = basePosition,
-//                        w = targetSize,
-//                        h = targetSize
-//                    }
-//            if (icon.x != 0)
-//                targetRect.x = MathUtils.Clamp(targetRect.x + MathUtils.Round(icon.x * IconSize / icon.size), 0, IconSize - targetRect.w)
-//            if (icon.y != 0)
-//                targetRect.y = MathUtils.Clamp(targetRect.y + MathUtils.Round(icon.y * IconSize / icon.size), 0, IconSize - targetRect.h)
-//            var srcRect = new SDL.SDL_Rect
-//                    {
-//                        w = sdlSurface.h, // That is correct (cutting mip maps)
-//                        h = sdlSurface.h
-//                    }
-//            SDL.SDL_BlitScaled(image, ref srcRect, targetSurface, ref targetRect)
-//        }
-//        return IconCollection.AddIcon(targetSurface)
-//    }
+    private fun createIconFromSpec(cache: HashMap<ModPathPair, ImageIcon?>, vararg spec: FactorioIconPart): ImageIcon {
+        TODO()
+    }
 
     private fun deserializePrototypes(data: LuaTable, type: String, deserializer: Deserializer) {
         val table = data[type] as? LuaTable ?: return

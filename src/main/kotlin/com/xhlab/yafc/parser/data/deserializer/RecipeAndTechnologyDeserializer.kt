@@ -1,6 +1,7 @@
 package com.xhlab.yafc.parser.data.deserializer
 
 import com.xhlab.yafc.model.data.*
+import com.xhlab.yafc.model.data.DataUtils.getConsumption
 import com.xhlab.yafc.parser.data.SpecialNames
 import org.luaj.vm2.LuaTable
 
@@ -70,59 +71,54 @@ class RecipeAndTechnologyDeserializer constructor(
         }
     }
 
-//    private void UpdateRecipeCatalysts()
-//    {
-//        foreach (var recipe in allObjects.OfType<Recipe>())
-//        {
-//            foreach (var product in recipe.products)
-//            {
-//                if (product.productivityAmount == product.amount)
-//                {
-//                    var catalyst = recipe.GetConsumption(product.goods);
-//                    if (catalyst > 0f)
-//                        product.SetCatalyst(catalyst);
-//                }
-//            }
-//        }
-//    }
-//
-//    private void UpdateRecipeIngredientFluids()
-//    {
-//        foreach (var recipe in allObjects.OfType<Recipe>())
-//        {
-//            foreach (var ingredient in recipe.ingredients)
-//            {
-//                if (ingredient.goods is Fluid fluid && fluid.variants != null)
-//                {
-//                    int min = -1, max = fluid.variants.Count-1;
-//                    for (var i = 0; i < fluid.variants.Count; i++)
-//                    {
-//                        var variant = fluid.variants[i];
-//                        if (variant.temperature < ingredient.temperature.min)
-//                            continue;
-//                        if (min == -1)
-//                            min = i;
-//                        if (variant.temperature > ingredient.temperature.max)
-//                        {
-//                            max = i - 1;
-//                            break;
-//                        }
-//                    }
-//
-//                    if (min >= 0 && max >= 0)
-//                    {
-//                        ingredient.goods = fluid.variants[min];
-//                        if (max > min)
-//                        {
-//                            var fluidVariants = new Fluid[max - min + 1];
-//                            ingredient.variants = fluidVariants;
-//                            fluid.variants.CopyTo(min, fluidVariants, 0, max-min+1);
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
+    internal fun updateRecipeCatalysts() {
+        parent.allObjects.filterIsInstance<MutableRecipeImpl>().forEach { recipe ->
+            recipe.products.forEach { product ->
+                if (product.productivityAmount == product.amount) {
+                    val catalyst = recipe.getConsumption(product.goods)
+                    if (catalyst > 0f) {
+                        product.setCatalyst(catalyst)
+                    }
+                }
+            }
+        }
+    }
+
+    internal fun updateRecipeIngredientFluids() {
+        parent.allObjects.filterIsInstance<MutableRecipeImpl>().forEach { recipe ->
+            recipe.ingredients.forEach { ingredient ->
+                if (ingredient.goods is MutableFluid) {
+                    val fluid = ingredient.goods as MutableFluid
+                    if (fluid.variants.isNotEmpty()) {
+                        var min = -1
+                        var max = fluid.variants.size - 1
+                        for (i in 0 until fluid.variants.size) {
+                            val variant = fluid.variants[i]
+                            if (variant.temperature < ingredient.temperature.min) {
+                                continue
+                            }
+                            if (min == -1) {
+                                min = i
+                            }
+                            if (variant.temperature > ingredient.temperature.max) {
+                                max = i - 1
+                                break
+                            }
+                        }
+
+                        if (min >= 0 && max >= 0) {
+                            ingredient.goods = fluid.variants[min]
+                            if (max > min) {
+                                ingredient.variants = ArrayList<MutableFluid>().apply {
+                                    addAll(fluid.variants.subList(min, max + 1))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     private fun loadTechnologyData(technology: MutableTechnology, table: LuaTable, forceDisable: Boolean) {
         val unit = table["unit"].checktable()

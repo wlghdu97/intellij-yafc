@@ -298,16 +298,16 @@ object DataUtils {
 //        return amount
 //    }
 
-//    public static float GetConsumption(this Recipe recipe, Goods product)
-//    {
-//        var amount = 0f
-//        foreach (var ingredient in recipe.ingredients)
-//        {
-//            if (ingredient.ContainsVariant(product))
-//                amount += ingredient.amount
-//        }
-//        return amount
-//    }
+    internal fun MutableRecipe.getConsumption(product: Goods): Float {
+        var amount = 0f
+        ingredients.forEach { ingredient ->
+            if (ingredient.containsVariant(product)) {
+                amount += ingredient.amount
+            }
+        }
+
+        return amount
+    }
 //
 //    public static FactorioObjectComparer<Recipe> GetRecipeComparerFor(Goods goods)
 //    {
