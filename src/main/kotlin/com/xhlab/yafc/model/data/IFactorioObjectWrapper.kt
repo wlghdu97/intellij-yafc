@@ -1,6 +1,6 @@
 package com.xhlab.yafc.model.data
 
-interface IFactorioObjectWrapper {
+sealed interface IFactorioObjectWrapper {
     val text: String
     val target: FactorioObject
     val amount: Float

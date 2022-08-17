@@ -1,13 +1,8 @@
 package com.xhlab.yafc.parser.data.deserializer
 
 import com.xhlab.yafc.model.Version
-import com.xhlab.yafc.model.data.AllowedEffects
-import com.xhlab.yafc.model.data.RecipeFlags
-import com.xhlab.yafc.model.data.TemperatureRange
-import com.xhlab.yafc.model.data.entity.EntityEnergyType
+import com.xhlab.yafc.model.data.*
 import com.xhlab.yafc.parser.data.SpecialNames
-import com.xhlab.yafc.parser.data.mutable.*
-import com.xhlab.yafc.parser.data.mutable.entity.*
 import org.luaj.vm2.LuaTable
 import org.luaj.vm2.LuaValue
 import kotlin.math.*
@@ -164,7 +159,7 @@ internal class EntityDeserializer constructor(
 
     private fun createLaunchRecipe(
         entity: MutableEntityCrafter,
-        recipe: MutableRecipeImpl,
+        recipe: MutableRecipe,
         partsRequired: Int,
         outputCount: Int
     ): MutableRecipe {
@@ -587,8 +582,7 @@ internal class EntityDeserializer constructor(
     }
 
     private fun estimateNoiseExpression(expression: LuaTable): Float {
-        val type = expression["type"].optjstring("typed")
-        when (type) {
+        when (expression["type"].optjstring("typed")) {
             "variable" -> {
                 val varName = expression["variable_name"].optjstring("")
                 if (varName == "x" || varName == "y" || varName == "distance") {

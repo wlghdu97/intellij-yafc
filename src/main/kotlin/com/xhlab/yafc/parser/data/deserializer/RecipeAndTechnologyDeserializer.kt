@@ -1,9 +1,7 @@
 package com.xhlab.yafc.parser.data.deserializer
 
-import com.xhlab.yafc.model.data.RecipeFlags
-import com.xhlab.yafc.model.data.TemperatureRange
+import com.xhlab.yafc.model.data.*
 import com.xhlab.yafc.parser.data.SpecialNames
-import com.xhlab.yafc.parser.data.mutable.*
 import org.luaj.vm2.LuaTable
 
 class RecipeAndTechnologyDeserializer constructor(

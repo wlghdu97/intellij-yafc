@@ -1,20 +1,15 @@
 package com.xhlab.yafc.model.data
 
-data class Ingredient constructor(
-    val goods: Goods,
-    override val amount: Float,
+sealed interface Ingredient : IFactorioObjectWrapper {
+    val goods: Goods
     val variants: List<Goods>?
-) : IFactorioObjectWrapper {
 
-    val temperature: TemperatureRange = if (goods is Fluid) {
-        goods.temperatureRange
-    } else {
-        TemperatureRange.Any
-    }
+    val temperature: TemperatureRange
+        get() = (goods as? Fluid)?.temperatureRange ?: TemperatureRange.Any
 
     override val text: String
         get() {
-            var text = goods.locName ?: ""
+            var text = goods.locName
             if (amount != 1f) {
                 text = "${amount}x $text"
             }
@@ -25,16 +20,6 @@ data class Ingredient constructor(
             return text
         }
 
-    override val target: FactorioObject = goods
-
-    fun containsVariant(product: Goods): Boolean {
-        if (goods == product) {
-            return true
-        }
-        if (variants != null) {
-            return variants.indexOf(product) >= 0
-        }
-
-        return false
-    }
+    override val target: FactorioObject
+        get() = goods
 }

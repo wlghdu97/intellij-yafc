@@ -1,9 +1,9 @@
 package com.xhlab.yafc.model.data
 
-data class ModuleSpecification(
-    val consumption: Float = 0f,
-    val speed: Float = 0f,
-    val productivity: Float = 0f,
-    val pollution: Float = 0f,
-    val limitation: List<Recipe> = emptyList()
-)
+sealed interface ModuleSpecification {
+    val consumption: Float
+    val speed: Float
+    val productivity: Float
+    val pollution: Float
+    val limitation: List<Recipe>
+}

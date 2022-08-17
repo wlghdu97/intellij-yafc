@@ -2,10 +2,8 @@ package com.xhlab.yafc.parser.data.deserializer
 
 import com.xhlab.yafc.model.Project
 import com.xhlab.yafc.model.Version
+import com.xhlab.yafc.model.data.*
 import com.xhlab.yafc.parser.data.deserializer.FactorioDataDeserializer.TypeWithName.Companion.typeWithName
-import com.xhlab.yafc.parser.data.mutable.*
-import com.xhlab.yafc.parser.data.mutable.entity.MutableEntity
-import com.xhlab.yafc.parser.data.mutable.entity.MutableEntityCrafter
 import org.luaj.vm2.LuaTable
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
@@ -26,7 +24,7 @@ class FactorioDataDeserializer constructor(
     internal val fuelUsers = DataBucket<MutableEntity, String>() // DataBucket
     internal val recipeCategories = DataBucket<String, MutableRecipeOrTechnology>() // DataBucket
     internal val recipeCrafters = DataBucket<MutableEntityCrafter, String>() // DataBucket
-    internal val recipeModules = DataBucket<MutableRecipeImpl, MutableItem>() // DataBucket
+    internal val recipeModules = DataBucket<MutableRecipe, MutableItem>() // DataBucket
     internal val placeResults = hashMapOf<MutableItem, String>()
     internal val universalModules = arrayListOf<MutableItem>()
     internal val allModules = arrayListOf<MutableItem>()

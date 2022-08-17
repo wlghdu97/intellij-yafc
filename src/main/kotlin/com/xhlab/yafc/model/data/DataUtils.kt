@@ -2,7 +2,6 @@ package com.xhlab.yafc.model.data
 
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.util.MathUtil.clamp
-import com.xhlab.yafc.parser.data.mutable.MutableFluid
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.*
@@ -76,7 +75,7 @@ object DataUtils {
 //
 //    public static readonly IComparer<FactorioObject> DeterministicComparer = new FactorioObjectDeterministicComparer()
 
-    internal val fluidTemperatureComparer = Comparator<MutableFluid> { x, y ->
+    internal val fluidTemperatureComparer = Comparator<Fluid> { x, y ->
         x.temperature.compareTo(y.temperature)
     }
 

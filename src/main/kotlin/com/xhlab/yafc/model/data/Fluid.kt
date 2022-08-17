@@ -1,14 +1,14 @@
 package com.xhlab.yafc.model.data
 
-abstract class Fluid : Goods() {
-    open val heatCapacity: Float = 1e-3f
+sealed class Fluid : Goods {
+    abstract val heatCapacity: Float
     abstract val temperatureRange: TemperatureRange
     abstract val temperature: Int
     abstract val heatValue: Float
     abstract val variants: List<Fluid>
 
-    override val isPower: Boolean = false
-    override val type: String = "Fluid"
-    override val sortingOrder: FactorioObjectSortOrder = FactorioObjectSortOrder.FLUIDS
-    override val flowUnitOfMeasure: UnitOfMeasure = UnitOfMeasure.FLUID_PER_SECOND
+    final override val isPower: Boolean = false
+    final override val type: String = "Fluid"
+    final override val sortingOrder: FactorioObjectSortOrder = FactorioObjectSortOrder.FLUIDS
+    final override val flowUnitOfMeasure: UnitOfMeasure = UnitOfMeasure.FLUID_PER_SECOND
 }

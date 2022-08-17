@@ -2,14 +2,9 @@ package com.xhlab.yafc.parser.data.deserializer
 
 import com.intellij.openapi.diagnostic.Logger
 import com.xhlab.yafc.model.Project
-import com.xhlab.yafc.model.data.DataUtils
-import com.xhlab.yafc.model.data.FactorioIconPart
-import com.xhlab.yafc.model.data.FactorioId
-import com.xhlab.yafc.model.data.TemperatureRange
+import com.xhlab.yafc.model.data.*
 import com.xhlab.yafc.parser.FactorioLocalization
 import com.xhlab.yafc.parser.data.SpecialNames
-import com.xhlab.yafc.parser.data.mutable.*
-import com.xhlab.yafc.parser.data.mutable.entity.MutableEntityImpl
 import org.luaj.vm2.LuaTable
 import org.luaj.vm2.LuaValue
 import kotlin.reflect.KType
@@ -84,7 +79,7 @@ class CommonDeserializer constructor(
         val subIcons = iconStr.take(4).mapIndexed { n, x ->
             FactorioIconPart("__.__/$x", x = n * 7f - 12, y = -16f, scale = 0.28f)
         }
-        fluid.iconSpec = (fluid.iconSpec ?: emptyList()) + subIcons
+        fluid.iconSpec = fluid.iconSpec + subIcons
     }
 
     fun loadData(): Project {
@@ -126,7 +121,7 @@ class CommonDeserializer constructor(
 
         parent.allObjects.sortWith { x, y ->
             if (x.sortingOrder == y.sortingOrder) {
-                (x.typeDotName ?: "").compareTo(y.typeDotName ?: "", true) // huh.
+                (x.typeDotName).compareTo(y.typeDotName, true) // huh.
             } else {
                 x.sortingOrder.ordinal - y.sortingOrder.ordinal
             }
@@ -337,7 +332,7 @@ class CommonDeserializer constructor(
             item.stackSize = table["stack_size"].optint(1)
 
             val placedAsEquipmentResult = table["placed_as_equipment_result"]
-            if (item.locName == null && placedAsEquipmentResult.isstring()) {
+            if (item.locName.isEmpty() && placedAsEquipmentResult.isstring()) {
                 localize("equipment-name.${placedAsEquipmentResult.tojstring()}", null)
                 if (localeBuilder.isNotEmpty()) {
                     item.locName = finishLocalize()
@@ -704,7 +699,7 @@ class CommonDeserializer constructor(
         } else {
             localize("$localeType-name.$name", null)
         }
-        obj.locName = if (localeBuilder.isEmpty()) null else finishLocalize()
+        obj.locName = if (localeBuilder.isEmpty()) "" else finishLocalize()
 
         val localizedDescription = table["localised_description"]
         if (localizedDescription != LuaValue.NIL) {
@@ -712,7 +707,7 @@ class CommonDeserializer constructor(
         } else {
             localize("$localeType-description.$name", null)
         }
-        obj.locDescr = if (localeBuilder.isEmpty()) null else finishLocalize()
+        obj.locDescr = if (localeBuilder.isEmpty()) "" else finishLocalize()
 
         val defaultIconSize = table["icon_size"].tofloat()
         val icon = table["icon"]
@@ -769,7 +764,7 @@ class CommonDeserializer constructor(
                 }
             }
 
-            else -> null
+            else -> emptyList()
         }
 
         return obj
@@ -793,11 +788,11 @@ class CommonDeserializer constructor(
 
     private fun typeNameToType(typeName: String): KType? {
         return when (typeName) {
-            "item" -> typeOf<MutableItem>()
-            "fluid" -> typeOf<MutableFluid>()
-            "technology" -> typeOf<MutableTechnology>()
-            "recipe" -> typeOf<MutableRecipeImpl>()
-            "entity" -> typeOf<MutableEntityImpl>()
+            "item" -> typeOf<Item>()
+            "fluid" -> typeOf<Fluid>()
+            "technology" -> typeOf<Technology>()
+            "recipe" -> typeOf<Recipe>()
+            "entity" -> typeOf<Entity>()
             else -> null
         }
     }

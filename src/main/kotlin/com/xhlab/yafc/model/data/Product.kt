@@ -1,24 +1,11 @@
 package com.xhlab.yafc.model.data
 
-data class Product(
-    val goods: Goods,
-    val amountMin: Float,
-    val amountMax: Float,
-    override val amount: Float, // This is average amount including probability and range
-    val productivityAmount: Float,
-    val probability: Float
-) : IFactorioObjectWrapper {
-
-    constructor(goods: Goods, amount: Float) : this(goods, amount, amount, amount, amount, amount)
-
-    constructor(goods: Goods, min: Float, max: Float, probability: Float) : this(
-        goods = goods,
-        amountMin = min,
-        amountMax = max,
-        amount = probability * (min + max) / 2,
-        productivityAmount = probability * (min + max) / 2,
-        probability = probability
-    )
+sealed class Product : IFactorioObjectWrapper {
+    abstract val goods: Goods
+    abstract val amountMin: Float
+    abstract val amountMax: Float
+    abstract val productivityAmount: Float
+    abstract val probability: Float
 
     fun getAmount(productivityBonus: Float) = amount + productivityBonus * productivityAmount
 
@@ -41,6 +28,6 @@ data class Product(
                 text = DataUtils.formatAmount(probability, UnitOfMeasure.PERCENT) + " " + text
             }
 
-            return text ?: ""
+            return text
         }
 }

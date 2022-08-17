@@ -2,13 +2,8 @@ package com.xhlab.yafc.parser.data.deserializer
 
 import com.xhlab.yafc.model.Version
 import com.xhlab.yafc.model.data.*
-import com.xhlab.yafc.model.data.entity.Entity
-import com.xhlab.yafc.model.data.entity.EntityEnergyType
 import com.xhlab.yafc.parser.data.SpecialNames
 import com.xhlab.yafc.parser.data.deserializer.FactorioDataDeserializer.TypeWithName.Companion.typeWithName
-import com.xhlab.yafc.parser.data.mutable.*
-import com.xhlab.yafc.parser.data.mutable.entity.MutableEntity
-import com.xhlab.yafc.parser.data.mutable.entity.MutableEntityEnergy
 
 class ContextDeserializer constructor(
     private val parent: FactorioDataDeserializer,
@@ -20,7 +15,7 @@ class ContextDeserializer constructor(
         name = SpecialNames.electricity,
         locName = "Electricity",
         locDescr = "This is an object that represents electric energy",
-        icon = "__core__/graphics/icons/alerts/electricity-icon-unplugged.png",
+        icon = FactorioIconPart("__core__/graphics/icons/alerts/electricity-icon-unplugged.png"),
         signal = "signal-E"
     )
     private val heat: MutableSpecial = createSpecialObject(
@@ -28,7 +23,7 @@ class ContextDeserializer constructor(
         name = SpecialNames.heat,
         locName = "Heat",
         locDescr = "This is an object that represents heat energy",
-        icon = "__core__/graphics/arrows/heat-exchange-indication.png",
+        icon = FactorioIconPart("__core__/graphics/arrows/heat-exchange-indication.png"),
         signal = "signal-H"
     )
     private val voidEnergy: MutableSpecial = createSpecialObject(
@@ -36,7 +31,7 @@ class ContextDeserializer constructor(
         name = SpecialNames.void,
         locName = "Void",
         locDescr = "This is an object that represents infinite energy",
-        icon = "__core__/graphics/icons/mip/infinity.png",
+        icon = FactorioIconPart("__core__/graphics/icons/mip/infinity.png"),
         signal = "signal-V"
     )
     internal val rocketLaunch: MutableSpecial = createSpecialObject(
@@ -44,7 +39,7 @@ class ContextDeserializer constructor(
         name = SpecialNames.rocketLaunch,
         locName = "Rocket launch slot",
         locDescr = "This is a slot in a rocket ready to be launched",
-        icon = "__base__/graphics/entity/rocket-silo/02-rocket.png",
+        icon = FactorioIconPart("__base__/graphics/entity/rocket-silo/02-rocket.png"),
         signal = "signal-R"
     )
 
@@ -83,20 +78,17 @@ class ContextDeserializer constructor(
         name: String,
         locName: String,
         locDescr: String,
-        icon: String,
+        icon: FactorioIconPart,
         signal: String
     ): MutableSpecial {
         return parent.getObject(name) {
-            MutableSpecial(
-                virtualSignal = signal,
-                power = isPower,
-                factorioType = "special",
-                name = it,
-                locName = locName,
-                locDescr = locDescr,
-                iconSpec = listOf(FactorioIconPart(icon)),
-                fuelValue = if (isPower) 1f else 0f
-            )
+            MutableSpecial(it, signal, isPower).apply {
+                this.factorioType = "special"
+                this.locName = locName
+                this.locDescr = locDescr
+                this.iconSpec = listOf(icon)
+                this.fuelValue = if (isPower) 1f else 0f
+            }
         }
     }
 
@@ -396,18 +388,16 @@ class ContextDeserializer constructor(
         }
 
         val recipe = parent.getObject(fullName) {
-            MutableMechanics(
-                source = production,
-                factorioType = SpecialNames.fakeRecipe,
-                name = fullName,
-                locName = hint,
-                ingredients = ingredients,
-                products = products,
-                time = 1f,
-                enabled = true,
-                hidden = true,
-                flags = flags
-            )
+            MutableMechanics(production, fullName).apply {
+                this.factorioType = SpecialNames.fakeRecipe
+                this.locName = hint
+                this.ingredients = ingredients
+                this.products = products
+                this.time = 1f
+                this.enabled = true
+                this.hidden = true
+                this.flags = flags
+            }
         }
 
         parent.recipeCategories.add(category, recipe)
