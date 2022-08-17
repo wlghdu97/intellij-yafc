@@ -69,7 +69,7 @@ class CommonDeserializer constructor(
             parent.fluidVariants[variantName] = fluid.variants
             for (variant in fluid.variants) {
                 addTemperatureToFluidIcon(variant)
-                variant.name += "@" + variant.temperature
+                variant.name = variant.name.substringBefore("@") + "@" + variant.temperature
             }
         }
     }
