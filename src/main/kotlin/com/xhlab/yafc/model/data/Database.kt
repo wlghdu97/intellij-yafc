@@ -124,7 +124,10 @@ class Mapping<TKey : FactorioObject, TValue> internal constructor(
     operator fun get(id: FactorioId): TValue? = data[id.id - offset]
 
     override fun put(key: TKey, value: TValue?): TValue? {
-        TODO()
+        val idx = key.id.id - offset
+        val prev = data[idx]
+        data[idx] = value
+        return prev
     }
 
     override fun remove(key: TKey): TValue? {
@@ -137,7 +140,9 @@ class Mapping<TKey : FactorioObject, TValue> internal constructor(
     }
 
     override fun putAll(from: Map<out TKey, TValue?>) {
-        TODO()
+        from.entries.forEach { (k, v) ->
+            put(k, v)
+        }
     }
 
     override fun clear() {

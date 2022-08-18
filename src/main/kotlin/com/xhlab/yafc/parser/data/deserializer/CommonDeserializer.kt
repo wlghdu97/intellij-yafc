@@ -2,6 +2,8 @@ package com.xhlab.yafc.parser.data.deserializer
 
 import com.intellij.openapi.diagnostic.Logger
 import com.xhlab.yafc.model.Project
+import com.xhlab.yafc.model.analysis.Dependencies
+import com.xhlab.yafc.model.analysis.TechnologyLoopsFinder
 import com.xhlab.yafc.model.data.*
 import com.xhlab.yafc.parser.FactorioLocalization
 import com.xhlab.yafc.parser.data.SpecialNames
@@ -145,8 +147,8 @@ class CommonDeserializer constructor(
 
 //        progress.Report(("Post-processing", "Calculating dependencies"))
 
-//        Dependencies.Calculate()
-//        TechnologyLoopsFinder.FindTechnologyLoops()
+        val deps = Dependencies(database)
+        TechnologyLoopsFinder.findTechnologyLoops(database)
 
 //        progress.Report(("Post-processing", "Creating project"))
 
