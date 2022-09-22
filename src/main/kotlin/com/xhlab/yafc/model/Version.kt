@@ -44,7 +44,8 @@ data class Version(
                     append(revision.toString())
                 }
             }
-        }.toString()
+            toString()
+        }
     }
 
     companion object {
