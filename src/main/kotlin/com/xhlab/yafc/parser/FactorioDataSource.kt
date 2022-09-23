@@ -16,14 +16,9 @@ import java.io.Reader
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
-class FactorioDataSource {
-
+class FactorioDataSource constructor(private val progress: ProgressTextIndicator) {
     private val allMods = hashMapOf<String, ModInfo?>()
     private val gson = Gson()
-
-    private val logger = Logger.getInstance(FactorioDataSource::class.java)
-
-    var progressListener: ParserProgressChangeListener? = null
 
     fun resolveModPath(currentMod: String, fullPath: String, isLuaRequire: Boolean = false): Pair<String, String> {
         val splitters = if (isLuaRequire && !fullPath.contains("/")) fileSplittersLua else fileSplittersNormal
@@ -338,11 +333,11 @@ class FactorioDataSource {
     }
 
     private fun sendProgressUpdate(title: String, description: String) {
-        progressListener?.progressChanged(title, description)
+        progress.setText(title, description)
     }
 
     fun sendCurrentLoadingModChange(mod: String?) {
-        progressListener?.currentLoadingModChanged(mod)
+        progress.setText("Loading mod : $mod")
     }
 
     internal data class ModEntry(
@@ -453,6 +448,8 @@ class FactorioDataSource {
     }
 
     companion object {
+        private val logger = Logger.getInstance(FactorioDataSource::class.java)
+
         val defaultFactorioVersion = Version(1, 1)
 
         private val fileSplittersLua = charArrayOf('.', '/', '\\')

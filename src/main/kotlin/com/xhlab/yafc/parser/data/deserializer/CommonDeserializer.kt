@@ -4,6 +4,7 @@ import com.intellij.openapi.diagnostic.Logger
 import com.xhlab.yafc.model.data.*
 import com.xhlab.yafc.parser.FactorioDataSource
 import com.xhlab.yafc.parser.FactorioLocalization
+import com.xhlab.yafc.parser.ProgressTextIndicator
 import com.xhlab.yafc.parser.data.SpecialNames
 import org.luaj.vm2.LuaTable
 import org.luaj.vm2.LuaValue
@@ -19,8 +20,6 @@ class CommonDeserializer constructor(
     private val prototypes: LuaTable,
     private val renderIcons: Boolean
 ) {
-    private val logger = Logger.getInstance(CommonDeserializer::class.java)
-
     internal val raw = (data["raw"] as? LuaTable) ?: LuaValue.tableOf()
 
     internal fun getFluidFixedTemp(key: String, temperature: Int): MutableFluid {
@@ -84,43 +83,32 @@ class CommonDeserializer constructor(
         fluid.iconSpec = fluid.iconSpec + subIcons
     }
 
-    fun loadData(): YAFCDatabase {
-//        progress.Report(("Loading", "Loading items"))
-
+    fun loadData(progress: ProgressTextIndicator): YAFCDatabase {
+        progress.setText("Loading", "Loading items")
         val items = (prototypes["item"] as? LuaTable) ?: LuaTable.tableOf()
         for (prototypeName in items.keys()) {
-            deserializePrototypes(raw, prototypeName.tojstring(), itemDeserializer)
+            deserializePrototypes(raw, prototypeName.tojstring(), itemDeserializer, progress)
         }
         parent.recipeModules.sealAndDeduplicate(parent.universalModules)
         parent.allModules.addAll(parent.allObjects.filterIsInstance<MutableItem>().filter { it.module != null })
-
-//        progress.Report(("Loading", "Loading fluids"))
-
-        deserializePrototypes(raw, "fluid", fluidDeserializer)
-
-//        progress.Report(("Loading", "Loading recipes"))
-
-        deserializePrototypes(raw, "recipe", parent.recipeAndTechnology.recipeDeserializer)
-
-//        progress.Report(("Loading", "Loading technologies"))
-
-        deserializePrototypes(raw, "technology", parent.recipeAndTechnology.technologyDeserializer)
-
-//        progress.Report(("Loading", "Loading entities"))
-
+        progress.setText("Loading", "Loading fluids")
+        deserializePrototypes(raw, "fluid", fluidDeserializer, progress)
+        progress.setText("Loading", "Loading recipes")
+        deserializePrototypes(raw, "recipe", parent.recipeAndTechnology.recipeDeserializer, progress)
+        progress.setText("Loading", "Loading technologies")
+        deserializePrototypes(raw, "technology", parent.recipeAndTechnology.technologyDeserializer, progress)
+        progress.setText("Loading", "Loading entities")
         parent.entity.rocketEntitiesDeserializer.deserialize(raw["rocket-silo-rocket"].checktable())
         val entities = prototypes["entity"].opttable(LuaValue.tableOf())
         for (prototypeName in entities.keys()) {
-            deserializePrototypes(raw, prototypeName.tojstring(), parent.entity.entityDeserializer)
+            deserializePrototypes(raw, prototypeName.tojstring(), parent.entity.entityDeserializer, progress)
         }
 
         val scriptEnabled = data["script_enabled"].opttable(LuaValue.tableOf())
         parseModYafcHandles(scriptEnabled)
-
-//        progress.Report(("Post-processing", "Computing maps"))
+        progress.setText("Post-processing", "Computing maps")
 
         // Deterministically sort all objects
-
         parent.allObjects.sortWith { x, y ->
             if (x.sortingOrder == y.sortingOrder) {
                 (x.typeDotName).compareTo(y.typeDotName, true) // huh.
@@ -174,9 +162,14 @@ class CommonDeserializer constructor(
         TODO()
     }
 
-    private fun deserializePrototypes(data: LuaTable, type: String, deserializer: Deserializer) {
+    private fun deserializePrototypes(
+        data: LuaTable,
+        type: String,
+        deserializer: Deserializer,
+        progress: ProgressTextIndicator
+    ) {
         val table = data[type] as? LuaTable ?: return
-//        progress.Report(("Building objects", type))
+        progress.setText("Building objects", type)
         for (key in table.keys()) {
             val entry = table[key]
             if (entry is LuaTable) {
@@ -691,5 +684,9 @@ class CommonDeserializer constructor(
 
     interface Deserializer {
         fun deserialize(table: LuaTable)
+    }
+
+    companion object {
+        private val logger = Logger.getInstance(CommonDeserializer::class.java)
     }
 }

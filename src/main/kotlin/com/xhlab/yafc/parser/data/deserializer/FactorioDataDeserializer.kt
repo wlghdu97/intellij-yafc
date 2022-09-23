@@ -3,6 +3,7 @@ package com.xhlab.yafc.parser.data.deserializer
 import com.xhlab.yafc.model.Version
 import com.xhlab.yafc.model.data.*
 import com.xhlab.yafc.parser.FactorioDataSource
+import com.xhlab.yafc.parser.ProgressTextIndicator
 import com.xhlab.yafc.parser.data.deserializer.FactorioDataDeserializer.TypeWithName.Companion.typeWithName
 import org.luaj.vm2.LuaTable
 import kotlin.reflect.KType
@@ -38,8 +39,8 @@ class FactorioDataDeserializer constructor(
     internal val entity = EntityDeserializer(this, factorioVersion)
     internal val recipeAndTechnology = RecipeAndTechnologyDeserializer(this, expensiveRecipes)
 
-    fun loadData(): YAFCDatabase {
-        return common.loadData()
+    fun loadData(progress: ProgressTextIndicator): YAFCDatabase {
+        return common.loadData(progress)
     }
 
     internal inline fun <reified T> getRef(

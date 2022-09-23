@@ -36,6 +36,31 @@
                 language="YAFC"
                 implementationClass="com.intellij.json.editor.folding.JsonFoldingBuilder"/>
 
+        <!-- YAFC Project & Analysis -->
+        <projectService serviceImplementation="com.xhlab.yafc.model.YAFCProject"/>
+
+        <editorNotificationProvider
+                implementation="com.xhlab.yafc.ide.notification.YAFCDatabaseSyncNotificationProvider"/>
+
+        <postStartupActivity implementation="com.xhlab.yafc.ide.project.YAFCProjectStartupActivity" order="last"/>
+
+        <notificationGroup id="YAFC Project Sync" displayType="BALLOON"/>
+
+        <!-- YAFC Configurable -->
+        <projectConfigurable groupId="tools"
+                             instance="com.xhlab.yafc.ide.settings.factorio.YAFCSettingsConfigurable"
+                             id="settings.yafc"
+                             key="settings.yafc.name"
+                             bundle="messages.YAFCBundle"/>
+
+        <applicationService
+                serviceImplementation="com.xhlab.yafc.ide.settings.factorio.path.FactorioPathManager"/>
+        <applicationService
+                serviceImplementation="com.xhlab.yafc.ide.settings.factorio.modpath.FactorioModPathManager"/>
     </extensions>
 
+    <projectListeners>
+        <listener class="com.xhlab.yafc.ide.notification.YAFCStateChangeNotification"
+                  topic="com.xhlab.yafc.ide.project.sync.YAFCSyncListener"/>
+    </projectListeners>
 </idea-plugin>

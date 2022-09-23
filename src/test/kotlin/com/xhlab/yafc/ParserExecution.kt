@@ -19,11 +19,9 @@ class ParserExecutor(
     private val factorioPath: String,
     private val modPath: String,
 ) : ParserProgressChangeListener {
-
-    private val dataSource = FactorioDataSource().apply {
-        progressListener = this@ParserExecutor
-    }
     private val yafcVersion = Version(0, 4, 0)
+    private val indicator = TestProgressIndicator()
+    private val dataSource = FactorioDataSource(indicator)
 
     fun run() {
         dataSource.parse(factorioPath, modPath, false, "en", yafcVersion, false)
