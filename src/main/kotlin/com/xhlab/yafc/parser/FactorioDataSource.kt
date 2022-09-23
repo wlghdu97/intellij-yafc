@@ -2,12 +2,13 @@ package com.xhlab.yafc.parser
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.project.Project
 import com.twelvemonkeys.io.LittleEndianDataInputStream
 import com.xhlab.yafc.model.Version
 import com.xhlab.yafc.model.data.DataUtils
+import com.xhlab.yafc.model.data.YAFCDatabase
+import com.xhlab.yafc.parser.data.deserializer.FactorioDataDeserializer
+import org.luaj.vm2.LuaTable
 import org.luaj.vm2.LuaValue
 import java.io.File
 import java.io.FileInputStream
@@ -15,15 +16,9 @@ import java.io.Reader
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
-
-class FactorioDataSource {
-
+class FactorioDataSource constructor(private val progress: ProgressTextIndicator) {
     private val allMods = hashMapOf<String, ModInfo?>()
     private val gson = Gson()
-
-    private val logger = Logger.getInstance(FactorioDataSource::class.java)
-
-    var progressListener: ParserProgressChangeListener? = null
 
     fun resolveModPath(currentMod: String, fullPath: String, isLuaRequire: Boolean = false): Pair<String, String> {
         val splitters = if (isLuaRequire && !fullPath.contains("/")) fileSplittersLua else fileSplittersNormal
@@ -128,13 +123,13 @@ class FactorioDataSource {
     }
 
     fun parse(
-        factorioPath: String,
-        modPath: String,
-        projectPath: String,
+        factorioDataPath: String,
+        modPath: String?,
         expensive: Boolean,
         locale: String?,
+        yafcVersion: Version,
         renderIcons: Boolean = true
-    ): Project {
+    ): YAFCDatabase {
         try {
             sendCurrentLoadingModChange(null)
 
@@ -162,8 +157,8 @@ class FactorioDataSource {
             logger.debug("Mod list parsed")
 
             val allFoundMods = arrayListOf<ModInfo>()
-            findMods(factorioPath, allFoundMods)
-            if (modPath != factorioPath && modPath != "") {
+            findMods(factorioDataPath, allFoundMods)
+            if (modPath != factorioDataPath && !modPath.isNullOrBlank()) {
                 findMods(modPath, allFoundMods)
             }
 
@@ -267,11 +262,11 @@ class FactorioDataSource {
                 ?: throw RuntimeException("Postprocess.lua not found from resources")
 
             DataUtils.allMods = modLoadOrder
-            DataUtils.dataPath = factorioPath
+            DataUtils.dataPath = factorioDataPath
             DataUtils.modsPath = modPath
             DataUtils.expensiveRecipes = expensive
 
-            val dataContext = LuaContext(this, allMods, factorioPath)
+            val dataContext = LuaContext(this, allMods, factorioDataPath, yafcVersion)
             val settings = if (modSettings.exists()) {
                 LittleEndianDataInputStream(FileInputStream(modSettings)).use {
                     FactorioPropertyTree().readModSettings(it)
@@ -292,12 +287,19 @@ class FactorioDataSource {
             dataContext.exec(postprocess, "Postprocess.lua")
             sendCurrentLoadingModChange(null)
 
-//            val deserializer = new FactorioDataDeserializer(expensive, factorioVersion ?? defaultFactorioVersion)
-//            val project = deserializer.LoadData(projectPath, dataContext.data, dataContext.defines["prototypes"] as LuaTable, _progress, errorCollector, renderIcons)
+            val deserializer = FactorioDataDeserializer(
+                dataSource = this,
+                data = dataContext.data,
+                prototypes = dataContext.defines["prototypes"] as LuaTable,
+                renderIcons = renderIcons,
+                expensiveRecipes = expensive,
+                factorioVersion = factorioVersion ?: defaultFactorioVersion
+            )
+            val db = deserializer.loadData(progress)
             logger.debug("Completed!")
-            sendProgressUpdate("Completed!", "Done executing lua")
+            sendProgressUpdate("Completed!", "Done creating database")
 
-            TODO("implement Project")
+            return db
         } finally {
             allMods.clear()
         }
@@ -331,11 +333,11 @@ class FactorioDataSource {
     }
 
     private fun sendProgressUpdate(title: String, description: String) {
-        progressListener?.progressChanged(title, description)
+        progress.setText(title, description)
     }
 
     fun sendCurrentLoadingModChange(mod: String?) {
-        progressListener?.currentLoadingModChanged(mod)
+        progress.setText("Loading mod : $mod")
     }
 
     internal data class ModEntry(
@@ -446,6 +448,8 @@ class FactorioDataSource {
     }
 
     companion object {
+        private val logger = Logger.getInstance(FactorioDataSource::class.java)
+
         val defaultFactorioVersion = Version(1, 1)
 
         private val fileSplittersLua = charArrayOf('.', '/', '\\')

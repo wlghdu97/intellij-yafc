@@ -1,7 +1,7 @@
 package com.xhlab.yafc.parser
 
 import com.intellij.openapi.diagnostic.Logger
-import com.xhlab.yafc.model.Project
+import com.xhlab.yafc.model.Version
 import org.luaj.vm2.LuaError
 import org.luaj.vm2.LuaFunction
 import org.luaj.vm2.LuaTable
@@ -13,7 +13,8 @@ import java.io.File
 class LuaContext constructor(
     private val dataSource: FactorioDataSource,
     allMods: Map<String, FactorioDataSource.ModInfo?>,
-    factorioPath: String
+    factorioDataPath: String,
+    yafcVersion: Version
 ) {
     private val modFixes = hashMapOf<ModNamePair, ByteArray>()
     private val loadingMod = ArrayDeque<String>()
@@ -23,6 +24,12 @@ class LuaContext constructor(
     private val oldRequire: LuaFunction
 
     private val logger = Logger.getInstance(LuaContext::class.java)
+
+    val data: LuaTable
+        get() = (globals["data"] as? LuaTable) ?: LuaTable.tableOf()
+
+    val defines: LuaTable
+        get() = (globals["defines"] as? LuaTable) ?: LuaTable.tableOf()
 
     init {
         registerApi("raw_log", Log())
@@ -35,7 +42,7 @@ class LuaContext constructor(
         oldRequire = globals["require"] as LuaFunction
         setGlobal("require", Require())
 
-        setGlobal("yafc_version", LuaValue.valueOf(Project.currentYafcVersion.toString()))
+        setGlobal("yafc_version", LuaValue.valueOf(yafcVersion.toString()))
 
         val mods = LuaValue.tableOf()
         for (mod in allMods) {
@@ -61,13 +68,9 @@ class LuaContext constructor(
         setLuaPath("/data/?.lua")
 
         // load core lualib
-        setLuaPath("$factorioPath/core/lualib/?.lua")
+        setLuaPath("$factorioDataPath/core/lualib/?.lua")
 
         logger.info(globals.load("print(package.path)").call().tojstring())
-    }
-
-    fun getGlobal(name: String): LuaValue? {
-        return globals.get(name)
     }
 
     fun setGlobal(name: String, value: LuaValue) {
