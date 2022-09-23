@@ -106,7 +106,7 @@ class ContextDeserializer constructor(private val parent: FactorioDataDeserializ
         return parent.allObjects.size
     }
 
-    internal fun exportBuiltData(): Database = with(parent) {
+    internal fun exportBuiltData(): YAFCDatabase = with(parent) {
         allObjects.forEach {
             it.typeDotName = "${it.type}.${it.name}"
         }
@@ -139,7 +139,7 @@ class ContextDeserializer constructor(private val parent: FactorioDataDeserializ
         val technologies = FactorioIdRange<Technology>(firstTechnology, firstEntity, allObjects)
         val entities = FactorioIdRange<Entity>(firstEntity, last, allObjects)
 
-        return Database(
+        return YAFCDatabase(
             rootAccessible = rootAccessible,
             allSciencePacks = sciencePacks.toList(),
             objectsByTypeName = objectsByTypeName,

@@ -36,15 +36,6 @@
                 language="YAFC"
                 implementationClass="com.intellij.json.editor.folding.JsonFoldingBuilder"/>
 
-        <!-- YAFC Parser -->
-        <projectService serviceImplementation="com.xhlab.yafc.parser.FactorioDataSource"/>
     </extensions>
 
-    <actions>
-        <action id="YAFC.Parse"
-                class="com.xhlab.yafc.ide.action.ParserAction"
-                text="Parse">
-            <add-to-group group-id="HelpMenu" anchor="after" relative-to-action="ReportProblem"/>
-        </action>
-    </actions>
 </idea-plugin>

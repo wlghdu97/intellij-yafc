@@ -2,31 +2,31 @@ package com.xhlab.yafc
 
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.testFramework.TestLoggerFactory
+import com.xhlab.yafc.model.Version
 import com.xhlab.yafc.parser.FactorioDataSource
 import com.xhlab.yafc.parser.ParserProgressChangeListener
 
 fun main(args: Array<String>) {
     val factorioPath = args[0]
     val modPath = args[1]
-    val projectPath = args[2]
 
     Logger.setFactory(TestLoggerFactory::class.java)
 
-    ParserExecutor(factorioPath, modPath, projectPath).run()
+    ParserExecutor(factorioPath, modPath).run()
 }
 
 class ParserExecutor(
     private val factorioPath: String,
     private val modPath: String,
-    private val projectPath: String
 ) : ParserProgressChangeListener {
 
     private val dataSource = FactorioDataSource().apply {
         progressListener = this@ParserExecutor
     }
+    private val yafcVersion = Version(0, 4, 0)
 
     fun run() {
-        dataSource.parse(factorioPath, modPath, projectPath, false, "en", false)
+        dataSource.parse(factorioPath, modPath, false, "en", yafcVersion, false)
     }
 
     override fun progressChanged(title: String, description: String) {

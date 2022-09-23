@@ -6,6 +6,7 @@ import com.intellij.openapi.diagnostic.Logger
 import com.twelvemonkeys.io.LittleEndianDataInputStream
 import com.xhlab.yafc.model.Version
 import com.xhlab.yafc.model.data.DataUtils
+import com.xhlab.yafc.model.data.YAFCDatabase
 import com.xhlab.yafc.parser.data.deserializer.FactorioDataDeserializer
 import org.luaj.vm2.LuaTable
 import org.luaj.vm2.LuaValue
@@ -14,8 +15,6 @@ import java.io.FileInputStream
 import java.io.Reader
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
-
-typealias YAFCProject = com.xhlab.yafc.model.Project
 
 class FactorioDataSource {
 
@@ -129,13 +128,13 @@ class FactorioDataSource {
     }
 
     fun parse(
-        factorioPath: String,
-        modPath: String,
-        projectPath: String,
+        factorioDataPath: String,
+        modPath: String?,
         expensive: Boolean,
         locale: String?,
+        yafcVersion: Version,
         renderIcons: Boolean = true
-    ): YAFCProject {
+    ): YAFCDatabase {
         try {
             sendCurrentLoadingModChange(null)
 
@@ -163,8 +162,8 @@ class FactorioDataSource {
             logger.debug("Mod list parsed")
 
             val allFoundMods = arrayListOf<ModInfo>()
-            findMods(factorioPath, allFoundMods)
-            if (modPath != factorioPath && modPath != "") {
+            findMods(factorioDataPath, allFoundMods)
+            if (modPath != factorioDataPath && !modPath.isNullOrBlank()) {
                 findMods(modPath, allFoundMods)
             }
 
@@ -268,11 +267,11 @@ class FactorioDataSource {
                 ?: throw RuntimeException("Postprocess.lua not found from resources")
 
             DataUtils.allMods = modLoadOrder
-            DataUtils.dataPath = factorioPath
+            DataUtils.dataPath = factorioDataPath
             DataUtils.modsPath = modPath
             DataUtils.expensiveRecipes = expensive
 
-            val dataContext = LuaContext(this, allMods, factorioPath)
+            val dataContext = LuaContext(this, allMods, factorioDataPath, yafcVersion)
             val settings = if (modSettings.exists()) {
                 LittleEndianDataInputStream(FileInputStream(modSettings)).use {
                     FactorioPropertyTree().readModSettings(it)
@@ -294,18 +293,18 @@ class FactorioDataSource {
             sendCurrentLoadingModChange(null)
 
             val deserializer = FactorioDataDeserializer(
-                projectPath = projectPath,
+                dataSource = this,
                 data = dataContext.data,
                 prototypes = dataContext.defines["prototypes"] as LuaTable,
                 renderIcons = renderIcons,
                 expensiveRecipes = expensive,
                 factorioVersion = factorioVersion ?: defaultFactorioVersion
             )
-            val project = deserializer.loadData()
+            val db = deserializer.loadData(progress)
             logger.debug("Completed!")
-            sendProgressUpdate("Completed!", "Done executing lua")
+            sendProgressUpdate("Completed!", "Done creating database")
 
-            return project
+            return db
         } finally {
             allMods.clear()
         }

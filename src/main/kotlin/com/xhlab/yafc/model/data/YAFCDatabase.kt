@@ -1,6 +1,6 @@
 package com.xhlab.yafc.model.data
 
-class Database constructor(
+class YAFCDatabase constructor(
     val rootAccessible: List<FactorioObject>,
     val allSciencePacks: List<Item>,
     val objectsByTypeName: Map<String, FactorioObject>,
@@ -112,7 +112,7 @@ class Mapping<TKey : FactorioObject, TValue> internal constructor(
     }
 
     override fun containsKey(key: TKey): Boolean {
-        return true // why?
+        return true
     }
 
     override fun containsValue(value: TValue?): Boolean {

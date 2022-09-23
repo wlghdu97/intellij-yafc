@@ -1,11 +1,11 @@
 package com.xhlab.yafc.model.analysis
 
-import com.xhlab.yafc.model.data.Database
 import com.xhlab.yafc.model.data.FactorioId
 import com.xhlab.yafc.model.data.FactorioObject
 import com.xhlab.yafc.model.data.Mapping
+import com.xhlab.yafc.model.data.YAFCDatabase
 
-class Dependencies constructor(db: Database) {
+class Dependencies constructor(db: YAFCDatabase) {
     val dependencyList: Mapping<FactorioObject, List<DependencyList>>
     val reverseDependencies: Mapping<FactorioObject, MutableList<FactorioId>>
 

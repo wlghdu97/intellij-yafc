@@ -1,10 +1,8 @@
 package com.xhlab.yafc.parser.data.deserializer
 
 import com.intellij.openapi.diagnostic.Logger
-import com.xhlab.yafc.model.Project
-import com.xhlab.yafc.model.analysis.Dependencies
-import com.xhlab.yafc.model.analysis.TechnologyLoopsFinder
 import com.xhlab.yafc.model.data.*
+import com.xhlab.yafc.parser.FactorioDataSource
 import com.xhlab.yafc.parser.FactorioLocalization
 import com.xhlab.yafc.parser.data.SpecialNames
 import org.luaj.vm2.LuaTable
@@ -16,7 +14,7 @@ import kotlin.reflect.typeOf
 
 class CommonDeserializer constructor(
     private val parent: FactorioDataDeserializer,
-    private val projectPath: String,
+    private val dataSource: FactorioDataSource,
     private val data: LuaTable,
     private val prototypes: LuaTable,
     private val renderIcons: Boolean
@@ -86,7 +84,7 @@ class CommonDeserializer constructor(
         fluid.iconSpec = fluid.iconSpec + subIcons
     }
 
-    fun loadData(): Project {
+    fun loadData(): YAFCDatabase {
 //        progress.Report(("Loading", "Loading items"))
 
         val items = (prototypes["item"] as? LuaTable) ?: LuaTable.tableOf()
@@ -143,12 +141,11 @@ class CommonDeserializer constructor(
         parent.recipeAndTechnology.updateRecipeIngredientFluids()
         parent.recipeAndTechnology.updateRecipeCatalysts()
         parent.context.calculateMaps()
-        val database = parent.context.exportBuiltData()
 
 //        progress.Report(("Post-processing", "Calculating dependencies"))
 
-        val deps = Dependencies(database)
-        TechnologyLoopsFinder.findTechnologyLoops(database)
+//        val deps = Dependencies(database)
+//        TechnologyLoopsFinder.findTechnologyLoops(database)
 
 //        progress.Report(("Post-processing", "Creating project"))
 
@@ -159,9 +156,8 @@ class CommonDeserializer constructor(
 
 //        iconRenderedProgress = progress
 //        iconRenderTask.Wait()
-//
-//        return project
-        return Project()
+
+        return parent.context.exportBuiltData()
     }
 
 //    private volatile IProgress<(string, string)> iconRenderedProgress

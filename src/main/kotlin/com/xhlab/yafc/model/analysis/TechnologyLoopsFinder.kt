@@ -1,12 +1,12 @@
 package com.xhlab.yafc.model.analysis
 
-import com.xhlab.yafc.model.data.Database
 import com.xhlab.yafc.model.data.Technology
+import com.xhlab.yafc.model.data.YAFCDatabase
 import com.xhlab.yafc.model.math.Graph
 
 object TechnologyLoopsFinder {
 
-    fun findTechnologyLoops(db: Database) {
+    fun findTechnologyLoops(db: YAFCDatabase) {
         val graph = Graph<Technology>()
         for (technology in db.technologies.all) {
             for (prerequisite in technology.prerequisites) {

@@ -478,7 +478,7 @@ internal class EntityDeserializer constructor(
 
                 "constant-combinator" -> {
                     if (name == "constant-combinator") {
-                        Database.constantCombinatorCapacity = table["item_slot_count"].optint(18)
+                        YAFCDatabase.constantCombinatorCapacity = table["item_slot_count"].optint(18)
                     }
                 }
             }
