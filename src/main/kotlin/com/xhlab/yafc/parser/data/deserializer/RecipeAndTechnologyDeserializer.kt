@@ -2,6 +2,7 @@ package com.xhlab.yafc.parser.data.deserializer
 
 import com.xhlab.yafc.model.data.*
 import com.xhlab.yafc.model.data.DataUtils.getConsumption
+import com.xhlab.yafc.model.util.or
 import com.xhlab.yafc.parser.data.SpecialNames
 import org.luaj.vm2.LuaTable
 
@@ -47,7 +48,7 @@ class RecipeAndTechnologyDeserializer constructor(
             val recipeCategory = table["category"].optjstring("crafting")
             parent.recipeCategories.add(recipeCategory, recipe)
             recipe.modules = parent.recipeModules.getList(recipe)
-            recipe.flags = RecipeFlags.LIMITED_BY_TICK_RATE or recipe.flags
+            recipe.flags = RecipeFlag.LIMITED_BY_TICK_RATE or recipe.flags
         }
     }
 

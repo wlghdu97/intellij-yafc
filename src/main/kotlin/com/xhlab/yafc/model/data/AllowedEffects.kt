@@ -1,36 +1,26 @@
 package com.xhlab.yafc.model.data
 
-enum class AllowedEffects(val value: Int) {
+import com.xhlab.yafc.model.util.EnumFlag
+import java.util.*
+
+typealias AllowedEffects = EnumSet<AllowedEffect>
+
+enum class AllowedEffect(override val value: Int) : EnumFlag {
     SPEED(1 shl 0),
     PRODUCTIVITY(1 shl 1),
     CONSUMPTION(1 shl 2),
-    POLLUTION(1 shl 3),
-
-    ALL(SPEED.value or PRODUCTIVITY.value or CONSUMPTION.value or POLLUTION.value),
-    NONE(0);
-
-    infix fun or(other: AllowedEffects): AllowedEffects {
-        return fromValue(value or other.value)
-    }
-
-    infix fun xor(other: AllowedEffects): AllowedEffects {
-        return fromValue(value xor other.value)
-    }
+    POLLUTION(1 shl 3);
 
     companion object {
         fun fromString(type: String): AllowedEffects {
             return when (type.lowercase()) {
-                "speed" -> SPEED
-                "productivity" -> PRODUCTIVITY
-                "consumption" -> CONSUMPTION
-                "pollution" -> POLLUTION
-                "all" -> ALL
-                else -> NONE
+                "speed" -> EnumSet.of(SPEED)
+                "productivity" -> EnumSet.of(PRODUCTIVITY)
+                "consumption" -> EnumSet.of(CONSUMPTION)
+                "pollution" -> EnumSet.of(POLLUTION)
+                "all" -> EnumSet.allOf(AllowedEffect::class.java)
+                else -> EnumSet.noneOf(AllowedEffect::class.java)
             }
-        }
-
-        private fun fromValue(value: Int): AllowedEffects {
-            return values().find { it.value == value } ?: NONE
         }
     }
 }

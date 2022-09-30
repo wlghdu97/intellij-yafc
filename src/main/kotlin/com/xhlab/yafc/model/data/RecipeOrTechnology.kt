@@ -13,7 +13,7 @@ sealed interface RecipeOrTechnology : FactorioObject {
     val time: Float
     val enabled: Boolean
     val hidden: Boolean
-    val flags: RecipeFlags?
+    val flags: RecipeFlags
 
     override val sortingOrder: FactorioObjectSortOrder
         get() = FactorioObjectSortOrder.RECIPES

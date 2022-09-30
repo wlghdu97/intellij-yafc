@@ -1,5 +1,6 @@
 package com.xhlab.yafc.model.data
 
+import java.util.*
 import javax.swing.Icon
 
 internal data class MutableTechnology(
@@ -23,7 +24,7 @@ internal data class MutableTechnology(
     override var time: Float = 0f
     override var enabled: Boolean = false
     override var hidden: Boolean = false
-    override var flags: RecipeFlags? = null
+    override var flags: RecipeFlags = EnumSet.noneOf(RecipeFlag::class.java)
     override var count: Float = 0f // TODO support formula count
     override var unlockRecipes: List<MutableRecipe> = emptyList()
     override var prerequisites: List<MutableTechnology> = emptyList()

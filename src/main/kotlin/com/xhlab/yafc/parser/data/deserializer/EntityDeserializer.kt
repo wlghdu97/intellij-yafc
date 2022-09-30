@@ -2,9 +2,12 @@ package com.xhlab.yafc.parser.data.deserializer
 
 import com.xhlab.yafc.model.Version
 import com.xhlab.yafc.model.data.*
+import com.xhlab.yafc.model.util.inv
+import com.xhlab.yafc.model.util.or
 import com.xhlab.yafc.parser.data.SpecialNames
 import org.luaj.vm2.LuaTable
 import org.luaj.vm2.LuaValue
+import java.util.*
 import kotlin.math.*
 
 internal class EntityDeserializer constructor(
@@ -138,12 +141,12 @@ internal class EntityDeserializer constructor(
         val allowedEffects = table["allowed_effects"]
         if (!allowedEffects.isnil()) {
             if (allowedEffects.isstring()) {
-                entity.allowedEffects = AllowedEffects.fromString(allowedEffects.tojstring())
+                entity.allowedEffects = AllowedEffect.fromString(allowedEffects.tojstring())
             } else if (allowedEffects.istable()) {
-                entity.allowedEffects = AllowedEffects.NONE
+                entity.allowedEffects = EnumSet.noneOf(AllowedEffect::class.java)
                 val effectsTable = allowedEffects.checktable()
                 effectsTable.keys().mapNotNull { effectsTable[it].optjstring(null) }.forEach {
-                    val effects = AllowedEffects.fromString(it)
+                    val effects = AllowedEffect.fromString(it)
                     entity.allowedEffects = entity.allowedEffects or effects
                 }
             }
@@ -236,7 +239,7 @@ internal class EntityDeserializer constructor(
                     parent.getObjectWithNominal<MutableEntity, MutableEntityBeacon>(name, ::MutableEntityBeacon).apply {
                         beaconEfficiency = table["distribution_effectivity"].optdouble(0.0).toFloat()
                         val usesPower = table["energy_usage"].tojstring()
-                        parseModules(table, this, AllowedEffects.ALL xor AllowedEffects.PRODUCTIVITY)
+                        parseModules(table, this, AllowedEffect.PRODUCTIVITY.inv()) // was (1 xor a)
                         power = parent.common.parseEnergy(usesPower)
                     }
                 }
@@ -302,7 +305,7 @@ internal class EntityDeserializer constructor(
                         val category = SpecialNames.boilerRecipe + boiler.name
                         val recipe = parent.context.createSpecialRecipe(output, category, "boiling to $targetTemp°")
                         parent.recipeCrafters.add(boiler, category)
-                        recipe.flags = RecipeFlags.USES_FLUID_TEMPERATURE or recipe.flags
+                        recipe.flags = RecipeFlag.USES_FLUID_TEMPERATURE or recipe.flags
                         recipe.ingredients = listOf(
                             MutableIngredient(input, 60f).apply {
                                 temperature = acceptTemperature
@@ -323,7 +326,7 @@ internal class EntityDeserializer constructor(
                         .getObjectWithNominal<MutableEntity, MutableEntityCrafterImpl>(name, ::MutableEntityCrafterImpl)
 
                     val usesPower = table["energy_usage"].tojstring()
-                    parseModules(table, crafter, AllowedEffects.NONE)
+                    parseModules(table, crafter, EnumSet.noneOf(AllowedEffect::class.java))
                     crafter.power = parent.common.parseEnergy(usesPower)
                     defaultDrain = crafter.power / 30f
                     crafter.craftingSpeed = table["crafting_speed"].optdouble(1.0).toFloat()
@@ -403,7 +406,7 @@ internal class EntityDeserializer constructor(
                         .getObjectWithNominal<MutableEntity, MutableEntityCrafterImpl>(name, ::MutableEntityCrafterImpl)
                     val usesPower = table["energy_usage"].tojstring()
                     drill.power = parent.common.parseEnergy(usesPower)
-                    parseModules(table, drill, AllowedEffects.ALL)
+                    parseModules(table, drill, EnumSet.allOf(AllowedEffect::class.java))
                     drill.craftingSpeed = table["mining_speed"].optdouble(1.0).toFloat()
 
                     val resourceCategories = table["resource_categories"].opttable(LuaValue.tableOf())
@@ -438,7 +441,7 @@ internal class EntityDeserializer constructor(
                     val lab = parent
                         .getObjectWithNominal<MutableEntity, MutableEntityCrafterImpl>(name, ::MutableEntityCrafterImpl)
                     val usesPower = table["energy_usage"].tojstring()
-                    parseModules(table, lab, AllowedEffects.ALL)
+                    parseModules(table, lab, EnumSet.allOf(AllowedEffect::class.java))
                     lab.power = parent.common.parseEnergy(usesPower)
                     lab.craftingSpeed = table["researching_speed"].optdouble(1.0).toFloat()
                     parent.recipeCrafters.add(lab, SpecialNames.labs)
@@ -507,7 +510,7 @@ internal class EntityDeserializer constructor(
                     val category = table["category"].optjstring("basic-solid")
                     val recipe =
                         parent.context.createSpecialRecipe(entity, SpecialNames.miningRecipe + category, "mining")
-                    recipe.flags = RecipeFlags.USES_MINING_PRODUCTIVITY or RecipeFlags.LIMITED_BY_TICK_RATE
+                    recipe.flags = RecipeFlag.USES_MINING_PRODUCTIVITY or RecipeFlag.LIMITED_BY_TICK_RATE
                     recipe.time = minable["mining_time"].optdouble(1.0).toFloat()
                     recipe.products = products
                     recipe.modules = parent.allModules

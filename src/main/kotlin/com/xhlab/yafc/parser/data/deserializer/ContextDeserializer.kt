@@ -1,8 +1,10 @@
 package com.xhlab.yafc.parser.data.deserializer
 
 import com.xhlab.yafc.model.data.*
+import com.xhlab.yafc.model.util.toSet
 import com.xhlab.yafc.parser.data.SpecialNames
 import com.xhlab.yafc.parser.data.deserializer.FactorioDataDeserializer.TypeWithName.Companion.typeWithName
+import java.util.*
 
 class ContextDeserializer constructor(private val parent: FactorioDataDeserializer) {
     private val electricity: MutableSpecial = createSpecialObject(
@@ -52,7 +54,7 @@ class ContextDeserializer constructor(private val parent: FactorioDataDeserializ
         category = SpecialNames.generatorRecipe,
         hint = "generating",
         products = listOf(MutableProduct(electricity, 1f)),
-        flags = RecipeFlags.SCALE_PRODUCTION_WITH_POWER
+        flags = RecipeFlag.SCALE_PRODUCTION_WITH_POWER.toSet()
     )
 
     internal var character: MutableEntity? = null
@@ -66,7 +68,7 @@ class ContextDeserializer constructor(private val parent: FactorioDataDeserializ
             category = SpecialNames.reactorRecipe,
             hint = "generating",
             products = listOf(MutableProduct(heat, 1f)),
-            flags = RecipeFlags.SCALE_PRODUCTION_WITH_POWER
+            flags = RecipeFlag.SCALE_PRODUCTION_WITH_POWER.toSet()
         )
     }
 
@@ -411,7 +413,7 @@ class ContextDeserializer constructor(private val parent: FactorioDataDeserializ
         hint: String,
         products: List<MutableProduct> = emptyList(),
         ingredients: List<MutableIngredient> = emptyList(),
-        flags: RecipeFlags? = null
+        flags: RecipeFlags = EnumSet.noneOf(RecipeFlag::class.java)
     ): MutableRecipe {
         val fullName = "$category${(if (category.endsWith(".")) "" else ".")}${production.name}"
 

@@ -10,5 +10,5 @@ internal sealed interface MutableRecipeOrTechnology : RecipeOrTechnology, Mutabl
     override var time: Float
     override var enabled: Boolean
     override var hidden: Boolean
-    override var flags: RecipeFlags?
+    override var flags: RecipeFlags
 }

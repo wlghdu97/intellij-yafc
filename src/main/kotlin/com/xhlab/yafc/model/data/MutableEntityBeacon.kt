@@ -1,5 +1,6 @@
 package com.xhlab.yafc.model.data
 
+import java.util.*
 import javax.swing.Icon
 
 internal data class MutableEntityBeacon(
@@ -21,7 +22,7 @@ internal data class MutableEntityBeacon(
     override var energy: MutableEntityEnergy? = null
     override var itemsToPlace: List<MutableItem> = emptyList()
     override var size: Int = 0
-    override var allowedEffects: AllowedEffects = AllowedEffects.NONE
+    override var allowedEffects: AllowedEffects = EnumSet.noneOf(AllowedEffect::class.java)
     override var moduleSlots: Int = 0
     override var beaconEfficiency: Float = 0f
 }
