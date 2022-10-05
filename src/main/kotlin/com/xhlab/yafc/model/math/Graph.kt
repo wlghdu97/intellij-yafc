@@ -1,5 +1,6 @@
 package com.xhlab.yafc.model.math
 
+import java.util.*
 import kotlin.math.min
 
 class Graph<T> : Iterable<Graph.Node<T>> {
@@ -99,10 +100,10 @@ class Graph<T> : Iterable<Graph.Node<T>> {
     // this result form will be changed when implementing AutoPlanner or ProductionTable
     fun mergeStrongConnectedComponents(): List<Set<T>> {
         for (node in allNodes) {
-            node.state = -1
+            node.state = UNDEFINED
         }
         val result = arrayListOf<Set<T>>()
-        val stack = arrayListOf<Node<T>>()
+        val stack = Stack<Node<T>>()
         var index = 0
 
         fun strongConnect(root: Node<T>) {
@@ -116,7 +117,7 @@ class Graph<T> : Iterable<Graph.Node<T>> {
             root.extra = index
             root.state = index
             index += 1
-            stack.add(root)
+            stack.push(root)
 
             for (neighbour in root.connections) {
                 if (neighbour.state == UNDEFINED) {
@@ -128,23 +129,13 @@ class Graph<T> : Iterable<Graph.Node<T>> {
             }
 
             if (root.extra == root.state) {
-                val rootIndex = stack.lastIndexOf(root)
-                val count = stack.size - rootIndex
-                if (count == 1 && !root.hasConnection(root)) {
-                    result.add(setOf(root.userData))
-                } else {
-                    val range = hashSetOf<T>()
-                    for (i in 0 until count) {
-                        val userData = stack[rootIndex + i].userData
-                        range.add(userData)
-                    }
-                    result.add(range)
-                }
-
-                for (i in stack.size - 1 downTo rootIndex) {
-                    stack[i].state = NOT_ON_STACK
-                }
-                stack.subList(rootIndex, rootIndex + count).clear()
+                val loopSet = hashSetOf<T>()
+                do {
+                    val w = stack.pop()
+                    w.state = NOT_ON_STACK
+                    loopSet.add(w.userData)
+                } while (root != w)
+                result.add(loopSet)
             }
         }
 

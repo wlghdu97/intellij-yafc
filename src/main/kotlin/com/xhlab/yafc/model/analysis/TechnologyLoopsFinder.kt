@@ -17,7 +17,7 @@ object TechnologyLoopsFinder {
         val merged = graph.mergeStrongConnectedComponents()
         var loops = false
         for (m in merged) {
-            if (m.isNotEmpty()) {
+            if (m.size > 1) {
                 println("Technology loop: " + m.joinToString(", ") { it.locName })
                 loops = true
             }
