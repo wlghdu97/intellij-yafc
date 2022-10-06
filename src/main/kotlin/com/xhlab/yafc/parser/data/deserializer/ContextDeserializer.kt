@@ -284,11 +284,9 @@ class ContextDeserializer constructor(private val parent: FactorioDataDeserializ
 
                     if (o is MutableEntityCrafterImpl) {
                         o.recipes = parent.recipeCrafters.getRaw(o).flatMap {
-                            val list = parent.recipeCategories.getRaw(it).filter { category ->
-                                val fit = category.canFit(o.itemInputs, o.fluidInputs, o.inputs)
-                                fit
+                            parent.recipeCategories.getRaw(it).filter { category ->
+                                category.canFit(o.itemInputs, o.fluidInputs, o.inputs)
                             }
-                            list
                         }
                         o.recipes.forEach { recipe ->
                             actualRecipeCrafters.add(recipe, o, true)

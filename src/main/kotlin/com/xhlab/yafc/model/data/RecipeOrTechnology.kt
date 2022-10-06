@@ -43,14 +43,14 @@ sealed interface RecipeOrTechnology : FactorioObject {
         }
     }
 
-    fun canFit(itemInputs: Int, fluidInputs: Int, slots: List<Goods>?): Boolean {
+    fun canFit(itemInputs: Int, fluidInputs: Int, slots: List<Goods>): Boolean {
         var mutableItemInputs = itemInputs
         var mutableFluidInputs = fluidInputs
 
         for (ingredient in ingredients) {
             if (ingredient.goods is Item && --mutableItemInputs < 0) return false
             if (ingredient.goods is Fluid && --mutableFluidInputs < 0) return false
-            if (slots != null && !slots.contains(ingredient.goods)) return false
+            if (slots.isNotEmpty() && !slots.contains(ingredient.goods)) return false
         }
 
         return true
