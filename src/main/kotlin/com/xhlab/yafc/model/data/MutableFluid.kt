@@ -29,5 +29,27 @@ internal data class MutableFluid(
         temperature = temp
         heatValue = (temp - temperatureRange.min) * heatCapacity
     }
+
+    internal fun copy() = MutableFluid(name).also {
+        it.factorioType = factorioType
+        it.originalName = originalName
+        it.typeDotName = typeDotName
+        it.locName = locName
+        it.locDescr = locDescr
+        it.iconSpec = iconSpec
+        it.icon = icon
+        it.id = id
+        it.specialType = specialType
+        it.heatCapacity = heatCapacity
+        it.temperatureRange = temperatureRange
+        it.temperature = temperature
+        it.heatValue = heatValue
+        it.fuelValue = fuelValue
+        it.production = production
+        it.usages = usages
+        it.miscSources = miscSources
+        it.fuelFor = fuelFor
+        it.variants = variants
+    }
 }
 
