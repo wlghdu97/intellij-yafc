@@ -24,7 +24,7 @@ class ParserExecutor(
     private val dataSource = FactorioDataSource(indicator)
 
     fun run() {
-        dataSource.parse(factorioPath, modPath, false, "en", yafcVersion, false)
+        dataSource.parse(factorioPath, modPath, false, "en", yafcVersion)
     }
 
     override fun progressChanged(title: String, description: String) {

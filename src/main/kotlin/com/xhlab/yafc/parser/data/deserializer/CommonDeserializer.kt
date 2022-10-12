@@ -2,23 +2,18 @@ package com.xhlab.yafc.parser.data.deserializer
 
 import com.intellij.openapi.diagnostic.Logger
 import com.xhlab.yafc.model.data.*
-import com.xhlab.yafc.parser.FactorioDataSource
 import com.xhlab.yafc.parser.FactorioLocalization
 import com.xhlab.yafc.parser.ProgressTextIndicator
 import com.xhlab.yafc.parser.data.SpecialNames
 import org.luaj.vm2.LuaTable
 import org.luaj.vm2.LuaValue
-import javax.swing.Icon
-import javax.swing.ImageIcon
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
 class CommonDeserializer constructor(
     private val parent: FactorioDataDeserializer,
-    private val dataSource: FactorioDataSource,
     private val data: LuaTable,
     private val prototypes: LuaTable,
-    private val renderIcons: Boolean
 ) {
     internal val raw = (data["raw"] as? LuaTable) ?: LuaValue.tableOf()
 
@@ -122,44 +117,11 @@ class CommonDeserializer constructor(
 
         updateSplitFluids()
 
-        if (renderIcons) {
-            renderIcons()
-        }
-
         parent.recipeAndTechnology.updateRecipeIngredientFluids()
         parent.recipeAndTechnology.updateRecipeCatalysts()
         parent.context.calculateMaps()
 
-//        progress.Report(("Post-processing", "Calculating dependencies"))
-
-//        val deps = Dependencies(database)
-//        TechnologyLoopsFinder.findTechnologyLoops(database)
-
-//        progress.Report(("Post-processing", "Creating project"))
-
-//        val project = Project.ReadFromFile(projectPath, errorCollector)
-//        Analysis.ProcessAnalyses(progress, project, errorCollector)
-
-//        progress.Report(("Rendering icons", ""))
-
-//        iconRenderedProgress = progress
-//        iconRenderTask.Wait()
-
         return parent.context.exportBuiltData()
-    }
-
-//    private volatile IProgress<(string, string)> iconRenderedProgress
-
-    private fun createSimpleIcon(cache: HashMap<ModPathPair, ImageIcon?>, graphicsPath: String): Icon {
-        return createIconFromSpec(cache, FactorioIconPart("__core__/graphics/$graphicsPath.png"))
-    }
-
-    private fun renderIcons() {
-        TODO()
-    }
-
-    private fun createIconFromSpec(cache: HashMap<ModPathPair, ImageIcon?>, vararg spec: FactorioIconPart): ImageIcon {
-        TODO()
     }
 
     private fun deserializePrototypes(

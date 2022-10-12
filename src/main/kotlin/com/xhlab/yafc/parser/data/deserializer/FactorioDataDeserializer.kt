@@ -2,7 +2,6 @@ package com.xhlab.yafc.parser.data.deserializer
 
 import com.xhlab.yafc.model.Version
 import com.xhlab.yafc.model.data.*
-import com.xhlab.yafc.parser.FactorioDataSource
 import com.xhlab.yafc.parser.ProgressTextIndicator
 import com.xhlab.yafc.parser.data.deserializer.FactorioDataDeserializer.TypeWithName.Companion.typeWithName
 import org.luaj.vm2.LuaTable
@@ -10,10 +9,8 @@ import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
 class FactorioDataDeserializer constructor(
-    dataSource: FactorioDataSource,
     data: LuaTable,
     prototypes: LuaTable,
-    renderIcons: Boolean,
     expensiveRecipes: Boolean,
     factorioVersion: Version
 ) {
@@ -34,7 +31,7 @@ class FactorioDataDeserializer constructor(
     internal val formerAliases = hashMapOf<String, MutableFactorioObject>()
     internal val rocketInventorySizes = hashMapOf<String, Int>()
 
-    internal val common = CommonDeserializer(this, dataSource, data, prototypes, renderIcons)
+    internal val common = CommonDeserializer(this, data, prototypes)
     internal val context = ContextDeserializer(this)
     internal val entity = EntityDeserializer(this, factorioVersion)
     internal val recipeAndTechnology = RecipeAndTechnologyDeserializer(this, expensiveRecipes)

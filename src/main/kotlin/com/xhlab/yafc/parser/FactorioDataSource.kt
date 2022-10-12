@@ -127,8 +127,7 @@ class FactorioDataSource constructor(private val progress: ProgressTextIndicator
         modPath: String?,
         expensive: Boolean,
         locale: String?,
-        yafcVersion: Version,
-        renderIcons: Boolean = true
+        yafcVersion: Version
     ): YAFCDatabase {
         try {
             sendCurrentLoadingModChange(null)
@@ -288,10 +287,8 @@ class FactorioDataSource constructor(private val progress: ProgressTextIndicator
             sendCurrentLoadingModChange(null)
 
             val deserializer = FactorioDataDeserializer(
-                dataSource = this,
                 data = dataContext.data,
                 prototypes = dataContext.defines["prototypes"] as LuaTable,
-                renderIcons = renderIcons,
                 expensiveRecipes = expensive,
                 factorioVersion = factorioVersion ?: defaultFactorioVersion
             )
