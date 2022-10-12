@@ -282,7 +282,7 @@ class ContextDeserializer constructor(private val parent: FactorioDataDeserializ
                         miscSources.add(product.goods, o)
                     }
 
-                    if (o is MutableEntityCrafterImpl) {
+                    if (o is MutableEntityCrafter) {
                         o.recipes = parent.recipeCrafters.getRaw(o).flatMap {
                             parent.recipeCategories.getRaw(it).filter { category ->
                                 category.canFit(o.itemInputs, o.fluidInputs, o.inputs)
