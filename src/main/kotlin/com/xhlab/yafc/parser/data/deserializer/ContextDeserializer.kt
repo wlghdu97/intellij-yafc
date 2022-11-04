@@ -109,9 +109,9 @@ class ContextDeserializer constructor(private val parent: FactorioDataDeserializ
     }
 
     internal fun exportBuiltData(): YAFCDatabase = with(parent) {
-        allObjects.forEach {
-            it.typeDotName = "${it.type}.${it.name}"
-        }
+//        allObjects.forEach {
+//            it.typeDotName = "${it.type}.${it.name}"
+//        }
 
         val objectsByTypeName = allObjects.associateBy { it.typeDotName }.toMutableMap()
         for (alias in formerAliases) {

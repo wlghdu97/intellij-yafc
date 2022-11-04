@@ -7,7 +7,6 @@ sealed interface FactorioObject : IFactorioObjectWrapper, Comparable<FactorioObj
     val factorioType: String
     val name: String
     val originalName: String // name without temperature
-    val typeDotName: String
     val locName: String
     val locDescr: String
     val iconSpec: List<FactorioIconPart>
@@ -19,6 +18,10 @@ sealed interface FactorioObject : IFactorioObjectWrapper, Comparable<FactorioObj
     val specialType: FactorioObjectSpecialType
         get() = FactorioObjectSpecialType.NORMAL
     val type: String
+
+    // changed typeDotName as calculated property, it's deterministic, can be used to distinguish same named objects with this
+    val typeDotName: String
+        get() = "$type.$name"
 
     override val target: FactorioObject
         get() = this

@@ -7,7 +7,6 @@ internal data class MutableFluid(
 ) : Fluid(), MutableGoods {
     override var factorioType: String = ""
     override var originalName: String = ""
-    override var typeDotName: String = ""
     override var locName: String = ""
     override var locDescr: String = ""
     override var iconSpec: List<FactorioIconPart> = emptyList()
@@ -33,7 +32,6 @@ internal data class MutableFluid(
     internal fun copy() = MutableFluid(name).also {
         it.factorioType = factorioType
         it.originalName = originalName
-        it.typeDotName = typeDotName
         it.locName = locName
         it.locDescr = locDescr
         it.iconSpec = iconSpec

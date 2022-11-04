@@ -9,7 +9,6 @@ internal data class MutableSpecial(
 ) : Special(), MutableGoods {
     override var factorioType: String = ""
     override var originalName: String = ""
-    override var typeDotName: String = ""
     override var locName: String = ""
     override var locDescr: String = ""
     override var iconSpec: List<FactorioIconPart> = emptyList()
