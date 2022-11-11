@@ -26,7 +26,7 @@ class FactorioDataDeserializer constructor(
     internal val placeResults = hashMapOf<MutableItem, String>()
     internal val universalModules = arrayListOf<MutableItem>()
     internal val allModules = arrayListOf<MutableItem>()
-    internal val sciencePacks = hashSetOf<MutableItem>()
+    internal val sciencePacks = mutableSetOf<MutableItem>()
     internal val fluidVariants = hashMapOf<String, List<MutableFluid>>()
     internal val formerAliases = hashMapOf<String, MutableFactorioObject>()
     internal val rocketInventorySizes = hashMapOf<String, Int>()
