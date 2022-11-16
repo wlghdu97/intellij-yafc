@@ -450,7 +450,7 @@ class CommonDeserializer constructor(
         }
 
         if (!localizedKey.contains("__")) {
-            localeBuilder.append(key)
+            localeBuilder.append(localizedKey)
 
             return
         }
