@@ -457,12 +457,13 @@ class CommonDeserializer constructor(
 
         with(localizedKey.split("__").iterator()) {
             while (hasNext()) {
-                val control = next()
-                localeBuilder.append(control)
+                val prev = next()
+                localeBuilder.append(prev)
 
                 if (!hasNext()) {
                     break
                 }
+                val control = next()
 
                 when {
                     (control == "ITEM" || control == "FLUID" || control == "RECIPE" || control == "ENTITY") -> {
