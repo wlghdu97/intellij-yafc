@@ -1,5 +1,6 @@
 package com.xhlab.yafc.model.data
 
+import com.google.ortools.linearsolver.MPSolver
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.util.MathUtil.clamp
 import com.xhlab.yafc.model.util.EnumFlag
@@ -178,33 +179,31 @@ object DataUtils {
         }
     }
 
-//    public static Solver CreateSolver(string name)
-//    {
-//        var solver = Solver.CreateSolver(name, "GLOP_LINEAR_PROGRAMMING")
-//        // Relax solver parameters as returning imprecise solution is better than no solution at all
-//        // It is not like we need 8 digits of precision after all, most computations in YAFC are done in singles
-//        // see all properties here: https://github.com/google/or-tools/blob/stable/ortools/glop/parameters.proto
-//        solver.SetSolverSpecificParametersAsString("solution_feasibility_tolerance:1e-1")
-//        return solver
-//    }
+    fun createSolver(name: String): MPSolver {
+        val solver = MPSolver(name, MPSolver.OptimizationProblemType.GLOP_LINEAR_PROGRAMMING)
+        // Relax solver parameters as returning imprecise solution is better than no solution at all
+        // It is not like we need 8 digits of precision after all, most computations in YAFC are done in singles
+        // see all properties here: https://github.com/google/or-tools/blob/stable/ortools/glop/parameters.proto
+        solver.setSolverSpecificParametersAsString("solution_feasibility_tolerance:1e-1")
+        return solver
+    }
 
-//    public static Solver.ResultStatus TrySolvewithDifferentSeeds(this Solver solver)
-//    {
-//        for (var i = 0 i < 3 i++)
-//        {
-//            var time = Stopwatch.StartNew()
-//            var result = solver.Solve()
-//            Console.WriteLine("Solution completed in "+time.ElapsedMilliseconds+" ms with result "+result)
-//            if (result == Solver.ResultStatus.ABNORMAL)
-//            {
-//                solver.SetSolverSpecificParametersAsString("random_seed:" + random.Next())
-//                continue
-//            } /*else
-//                VerySlowTryFindBadObjective(solver)*/
-//            return result
-//        }
-//        return Solver.ResultStatus.ABNORMAL
-//    }
+    fun trySolveWithDifferentSeeds(solver: MPSolver): MPSolver.ResultStatus {
+        for (i in 0 until 3) {
+            val time = System.currentTimeMillis()
+            val result = solver.solve()
+            val elapsedTime = System.currentTimeMillis() - time
+            println("Solution completed in $elapsedTime ms with result $result")
+            if (result == MPSolver.ResultStatus.ABNORMAL) {
+                solver.setSolverSpecificParametersAsString("random_seed:" + random.nextInt())
+                continue
+            } /*else
+                VerySlowTryFindBadObjective(solver)*/
+            return result
+        }
+
+        return MPSolver.ResultStatus.ABNORMAL
+    }
 
 //    public static void VerySlowTryFindBadObjective(Solver solver)
 //    {
@@ -236,14 +235,6 @@ object DataUtils {
 //        }
 //
 //        return false
-//    }
-
-//    public static void SetCoefficientCheck(this Constraint cstr, Variable var, float amount, ref Variable prev)
-//    {
-//        if (prev == var)
-//            amount += (float) cstr.GetCoefficient(var)
-//        else prev = var
-//        cstr.SetCoefficient(var, amount)
 //    }
 
 //    public class FavouritesComparer<T> : IComparer<T> where T : FactorioObject

@@ -14,6 +14,7 @@ repositories {
 dependencies {
     implementation "org.luaj:luaj-jse:3.0.1"
     implementation "com.googlecode.plist:dd-plist:1.25"
+    implementation "com.google.ortools:ortools-java:9.4.1874"
 }
 
 intellij {
