@@ -38,12 +38,17 @@
 
         <!-- YAFC Project & Analysis -->
         <projectService serviceImplementation="com.xhlab.yafc.model.YAFCProject"/>
+        <projectService serviceInterface="com.xhlab.yafc.model.YAFCProjectSettings"
+                        serviceImplementation="com.xhlab.yafc.ide.settings.yafc.YAFCIntellijProjectSettings"/>
 
         <editorNotificationProvider
                 implementation="com.xhlab.yafc.ide.notification.YAFCDatabaseSyncNotificationProvider"/>
 
         <postStartupActivity implementation="com.xhlab.yafc.ide.project.YAFCProjectStartupActivity" order="last"/>
+        <preloadingActivity implementation="com.xhlab.yafc.ide.project.YAFCPreloadActivity"/>
 
+        <projectService serviceInterface="com.xhlab.yafc.model.ErrorCollector"
+                        serviceImplementation="com.xhlab.yafc.ide.model.IntellijErrorCollector"/>
         <projectService serviceInterface="com.xhlab.yafc.parser.YAFCLogger"
                         serviceImplementation="com.xhlab.yafc.ide.model.IntellijYAFCLogger"/>
         <notificationGroup id="YAFC Project Sync" displayType="BALLOON"/>
@@ -53,6 +58,11 @@
                              instance="com.xhlab.yafc.ide.settings.factorio.YAFCSettingsConfigurable"
                              id="settings.yafc"
                              key="settings.yafc.name"
+                             bundle="messages.YAFCBundle"/>
+        <projectConfigurable parentId="settings.yafc"
+                             instance="com.xhlab.yafc.ide.settings.yafc.YAFCMilestoneSettingsConfigurable"
+                             id="settings.yafc.milestones"
+                             key="settings.yafc.milestones.name"
                              bundle="messages.YAFCBundle"/>
 
         <applicationService

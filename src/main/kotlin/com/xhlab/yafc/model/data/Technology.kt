@@ -2,6 +2,7 @@ package com.xhlab.yafc.model.data
 
 import com.xhlab.yafc.model.analysis.DependencyList
 import com.xhlab.yafc.model.analysis.IDependencyCollector
+import com.xhlab.yafc.model.util.toSet
 
 sealed class Technology : RecipeOrTechnology { // Technology is very similar to recipe
     abstract val count: Float // TODO support formula count
@@ -14,10 +15,10 @@ sealed class Technology : RecipeOrTechnology { // Technology is very similar to 
     override fun getDependencies(collector: IDependencyCollector, temp: MutableList<FactorioObject>) {
         super.getDependencies(collector, temp)
         if (prerequisites.isNotEmpty()) {
-            collector.addObject(prerequisites, DependencyList.Flags.TECHNOLOGY_PREREQUISITES)
+            collector.addObject(prerequisites, DependencyList.Flag.TECHNOLOGY_PREREQUISITES.toSet())
         }
         if (hidden && !enabled) {
-            collector.addId(emptyList(), DependencyList.Flags.HIDDEN)
+            collector.addId(emptyList(), DependencyList.Flag.HIDDEN.toSet())
         }
     }
 }

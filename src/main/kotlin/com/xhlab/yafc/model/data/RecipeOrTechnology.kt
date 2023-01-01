@@ -2,6 +2,7 @@ package com.xhlab.yafc.model.data
 
 import com.xhlab.yafc.model.analysis.DependencyList
 import com.xhlab.yafc.model.analysis.IDependencyCollector
+import com.xhlab.yafc.model.util.toSet
 
 sealed interface RecipeOrTechnology : FactorioObject {
     val crafters: List<EntityCrafter>
@@ -26,20 +27,20 @@ sealed interface RecipeOrTechnology : FactorioObject {
             for (ingredient in ingredients) {
                 val variants = ingredient.variants
                 if (variants != null) {
-                    collector.addObject(variants, DependencyList.Flags.INGREDIENT_VARIANT)
+                    collector.addObject(variants, DependencyList.Flag.INGREDIENT_VARIANT.toSet())
                 } else {
                     temp.add(ingredient.goods)
                 }
             }
             if (temp.isNotEmpty()) {
-                collector.addObject(temp, DependencyList.Flags.INGREDIENT)
+                collector.addObject(temp, DependencyList.Flag.INGREDIENT.toSet())
             }
         }
 
-        collector.addObject(crafters, DependencyList.Flags.CRAFTING_ENTITY)
+        collector.addObject(crafters, DependencyList.Flag.CRAFTING_ENTITY.toSet())
 
         sourceEntity?.let {
-            collector.addId(listOf(it.id), DependencyList.Flags.SOURCE_ENTITY)
+            collector.addId(listOf(it.id), DependencyList.Flag.SOURCE_ENTITY.toSet())
         }
     }
 
