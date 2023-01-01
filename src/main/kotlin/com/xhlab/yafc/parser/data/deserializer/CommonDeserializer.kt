@@ -559,60 +559,59 @@ class CommonDeserializer constructor(
 
         val defaultIconSize = table["icon_size"].tofloat()
         val icon = table["icon"]
-        obj.iconSpec = when {
-            (icon.isstring()) -> {
-                val path = icon.tojstring()
-                listOf(FactorioIconPart(path = path, size = defaultIconSize))
+        val icons = table["icons"]
+        if (icon.isstring()) {
+            val path = icon.tojstring()
+            val size = with(table["icon_size"]) {
+                if (this != LuaValue.NIL) this.tofloat() else defaultIconSize
             }
 
-            (icon.istable()) -> {
-                val iconList = icon.checktable()
-                iconList.keys().map {
-                    val item = iconList[it]
-                    val path = item["icon"].tojstring()
-                    val size = with(item["icon_size"]) {
-                        if (this != LuaValue.NIL) this.tofloat() else defaultIconSize
-                    }
-                    val scale = with(item["scale"]) {
-                        if (this != LuaValue.NIL) this.tofloat() else 1f
-                    }
-
-                    val shift = with(item["shift"]) {
-                        if (this.istable()) {
-                            get(1).tofloat() to get(2).tofloat()
-                        } else {
-                            null to null
-                        }
-                    }
-
-                    val tint = with(item["tint"]) {
-                        if (this.istable()) {
-                            val r = this["r"].tofloat()
-                            val g = this["g"].tofloat()
-                            val b = this["b"].tofloat()
-                            val a = this["a"].tofloat()
-
-                            Color(r, g, b, a)
-                        } else {
-                            Color()
-                        }
-                    }
-
-                    FactorioIconPart(
-                        path = path,
-                        size = size,
-                        x = shift.first ?: 0f,
-                        y = shift.second ?: 0f,
-                        r = tint.r,
-                        g = tint.g,
-                        b = tint.b,
-                        a = tint.a,
-                        scale = scale
-                    )
+            obj.iconSpec = listOf(FactorioIconPart(path = path, size = size))
+        } else if (icons.istable()) {
+            val iconList = icons.checktable()
+            obj.iconSpec = iconList.keys().map {
+                val item = iconList[it]
+                val path = item["icon"].tojstring()
+                val size = with(item["icon_size"]) {
+                    if (this != LuaValue.NIL) this.tofloat() else defaultIconSize
                 }
-            }
+                val scale = with(item["scale"]) {
+                    if (this != LuaValue.NIL) this.tofloat() else 1f
+                }
 
-            else -> emptyList()
+                val shift = with(item["shift"]) {
+                    if (this.istable()) {
+                        get(1).tofloat() to get(2).tofloat()
+                    } else {
+                        null to null
+                    }
+                }
+
+                val tint = with(item["tint"]) {
+                    if (this.istable()) {
+                        val r = this["r"].tofloat()
+                        val g = this["g"].tofloat()
+                        val b = this["b"].tofloat()
+                        val a = this["a"].tofloat()
+
+                        Color(r, g, b, a)
+                    } else {
+                        Color()
+                    }
+                }
+
+                FactorioIconPart(
+                    path = path,
+                    size = size,
+                    x = shift.first ?: 0f,
+                    y = shift.second ?: 0f,
+                    r = tint.r,
+                    g = tint.g,
+                    b = tint.b,
+                    a = tint.a,
+                    scale = scale
+                )
+            }
         }
 
         return obj
