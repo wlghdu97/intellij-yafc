@@ -3,6 +3,7 @@ package com.xhlab.yafc.model.analysis
 import com.xhlab.yafc.model.data.Technology
 import com.xhlab.yafc.model.data.YAFCDatabase
 import com.xhlab.yafc.model.math.Graph
+import com.xhlab.yafc.model.math.mergeStrongConnectedComponents
 
 object TechnologyLoopsFinder {
 
