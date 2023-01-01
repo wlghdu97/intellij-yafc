@@ -38,6 +38,8 @@
 
         <!-- YAFC Project & Analysis -->
         <projectService serviceImplementation="com.xhlab.yafc.model.YAFCProject"/>
+        <projectService serviceInterface="com.xhlab.yafc.model.YAFCProjectSettings"
+                        serviceImplementation="com.xhlab.yafc.ide.settings.yafc.YAFCIntellijProjectSettings"/>
 
         <editorNotificationProvider
                 implementation="com.xhlab.yafc.ide.notification.YAFCDatabaseSyncNotificationProvider"/>
