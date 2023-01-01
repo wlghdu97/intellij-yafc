@@ -1,6 +1,5 @@
 package com.xhlab.yafc.parser
 
-import com.intellij.openapi.diagnostic.Logger
 import com.xhlab.yafc.model.Version
 import org.luaj.vm2.LuaError
 import org.luaj.vm2.LuaFunction
@@ -14,7 +13,8 @@ class LuaContext constructor(
     private val dataSource: FactorioDataSource,
     allMods: Map<String, FactorioDataSource.ModInfo?>,
     factorioDataPath: String,
-    yafcVersion: Version
+    yafcVersion: Version,
+    private val logger: YAFCLogger
 ) {
     private val modFixes = hashMapOf<ModNamePair, ByteArray>()
     private val loadingMod = ArrayDeque<String>()
@@ -22,8 +22,6 @@ class LuaContext constructor(
     private val globals = JsePlatform.debugGlobals()
     private val packages = globals["package"] as LuaTable
     private val oldRequire: LuaFunction
-
-    private val logger = Logger.getInstance(LuaContext::class.java)
 
     val data: LuaTable
         get() = (globals["data"] as? LuaTable) ?: LuaTable.tableOf()
@@ -70,7 +68,7 @@ class LuaContext constructor(
         // load core lualib
         setLuaPath("$factorioDataPath/core/lualib/?.lua")
 
-        logger.info(globals.load("print(package.path)").call().tojstring())
+        logger.info<LuaContext>(globals.load("print(package.path)").call().tojstring())
     }
 
     fun setGlobal(name: String, value: LuaValue) {
@@ -82,7 +80,7 @@ class LuaContext constructor(
         override fun call(arg: LuaValue?): LuaValue {
             val log = arg?.tojstring()
             if (log != null) {
-                logger.info(log)
+                logger.info<LuaContext>(log)
             }
 
             return valueOf(0)
@@ -151,14 +149,14 @@ class LuaContext constructor(
                 val modFileExt = "$actualModName:$fileExt"
                 val loadedModFile = (packages["loaded"] as LuaTable)[modFileExt]
                 if (loadedModFile != null && loadedModFile != LuaValue.NIL) {
-                    logger.info("Loaded mod local module : $actualModName : $file")
+                    logger.info<LuaContext>("Loaded mod local module : $actualModName : $file")
                     loadedModFile
                 } else {
                     // TODO: add mod-fix support
                     val module = doModFile(actualModName, fileName)
                     if (module != LuaValue.NIL) {
                         (packages["loaded"] as LuaTable)[modFileExt] = module
-                        logger.info("Loaded local module : $file")
+                        logger.info<LuaContext>("Loaded local module : $file")
                         module
                     } else if (!fileExt.contains('/')) {
                         requireGlobal(origFile)
@@ -176,10 +174,10 @@ class LuaContext constructor(
         private fun requireGlobal(file: String): LuaValue {
             return try {
                 val result = oldRequire.call(file)
-                logger.info("Loaded global module : $file")
+                logger.info<LuaContext>("Loaded global module : $file")
                 result
             } catch (e: LuaError) {
-                logger.info("Error while requiring file $file : ${e.message}")
+                logger.info<LuaContext>("Error while requiring file $file : ${e.message}")
                 LuaValue.NIL
             }
         }
@@ -207,20 +205,20 @@ class LuaContext constructor(
             val bytes = dataSource.readModFile(mod, fileName)
             if (bytes != null) {
                 if (bytes.isEmpty()) {
-                    logger.info("Zero byte : $mod/$fileName")
+                    logger.info<LuaContext>("Zero byte : $mod/$fileName")
                     return LuaValue.NIL
                 }
 
-                logger.info("⬜ Executing $mod/$fileName : ${bytes.size} bytes")
+                logger.info<LuaContext>("⬜ Executing $mod/$fileName : ${bytes.size} bytes")
 
                 val string = bytes.toString(Charsets.UTF_8)
 
                 return globals.load(string, fileName).call()
             } else {
-                logger.info("Could not found mod file : $mod/$fileName")
+                logger.info<LuaContext>("Could not found mod file : $mod/$fileName")
             }
         } catch (e: LuaError) {
-            logger.info("Lua error while executing $mod/$fileName : ${e.message}")
+            logger.info<LuaContext>("Lua error while executing $mod/$fileName : ${e.message}")
         }
 
         return LuaValue.NIL

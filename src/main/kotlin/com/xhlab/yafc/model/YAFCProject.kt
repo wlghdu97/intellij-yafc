@@ -29,6 +29,7 @@ import com.xhlab.yafc.ide.settings.factorio.path.FactorioPathChangeListener.Comp
 import com.xhlab.yafc.ide.settings.factorio.path.FactorioPathManager
 import com.xhlab.yafc.model.data.YAFCDatabase
 import com.xhlab.yafc.parser.FactorioDataSource
+import com.xhlab.yafc.parser.YAFCLogger
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -97,7 +98,9 @@ class YAFCProject constructor(private val project: Project) :
                         return
                     }
                 }
-                val dataSource = FactorioDataSource(IntellijProgressTextIndicator(indicator))
+                val progress = IntellijProgressTextIndicator(indicator)
+                val logger = project.service<YAFCLogger>()
+                val dataSource = FactorioDataSource(progress, logger)
 
                 syncVariablesChanged = false
                 updateSyncStarted()

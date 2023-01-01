@@ -2,7 +2,6 @@ package com.xhlab.yafc.parser
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import com.intellij.openapi.diagnostic.Logger
 import com.twelvemonkeys.io.LittleEndianDataInputStream
 import com.xhlab.yafc.model.Version
 import com.xhlab.yafc.model.data.DataUtils
@@ -16,7 +15,10 @@ import java.io.Reader
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
-class FactorioDataSource constructor(private val progress: ProgressTextIndicator) {
+class FactorioDataSource constructor(
+    private val progress: ProgressTextIndicator,
+    private val logger: YAFCLogger
+) {
     private val allMods = hashMapOf<String, ModInfo?>()
     private val gson = Gson()
 
@@ -153,7 +155,7 @@ class FactorioDataSource constructor(private val progress: ProgressTextIndicator
             }
 
             allMods["core"] = null
-            logger.debug("Mod list parsed")
+            logger.debug<FactorioDataSource>("Mod list parsed")
 
             val allFoundMods = arrayListOf<ModInfo>()
             findMods(factorioDataPath, allFoundMods)
@@ -253,7 +255,7 @@ class FactorioDataSource constructor(private val progress: ProgressTextIndicator
                 }
             }
 
-            logger.info("All mods found! Loading order: " + modLoadOrder.joinToString(", "))
+            logger.info<FactorioDataSource>("All mods found! Loading order: " + modLoadOrder.joinToString(", "))
 
             val preprocess = javaClass.getResourceAsStream("/data/Sandbox.lua")?.readBytes()
                 ?: throw RuntimeException("Sandbox.lua not found from resources")
@@ -265,12 +267,12 @@ class FactorioDataSource constructor(private val progress: ProgressTextIndicator
             DataUtils.modsPath = modPath
             DataUtils.expensiveRecipes = expensive
 
-            val dataContext = LuaContext(this, allMods, factorioDataPath, yafcVersion)
+            val dataContext = LuaContext(this, allMods, factorioDataPath, yafcVersion, logger)
             val settings = if (modSettings.exists()) {
                 LittleEndianDataInputStream(FileInputStream(modSettings)).use {
                     FactorioPropertyTree().readModSettings(it)
                 }.apply {
-                    logger.info("Mod settings parsed")
+                    logger.info<FactorioDataSource>("Mod settings parsed")
                 }
             } else {
                 LuaValue.tableOf()
@@ -290,10 +292,11 @@ class FactorioDataSource constructor(private val progress: ProgressTextIndicator
                 data = dataContext.data,
                 prototypes = dataContext.defines["prototypes"] as LuaTable,
                 expensiveRecipes = expensive,
-                factorioVersion = factorioVersion ?: defaultFactorioVersion
+                factorioVersion = factorioVersion ?: defaultFactorioVersion,
+                logger = logger
             )
             val db = deserializer.loadData(progress)
-            logger.debug("Completed!")
+            logger.debug<FactorioDataSource>("Completed!")
             sendProgressUpdate("Completed!", "Done creating database")
 
             return db
@@ -445,8 +448,6 @@ class FactorioDataSource constructor(private val progress: ProgressTextIndicator
     }
 
     companion object {
-        private val logger = Logger.getInstance(FactorioDataSource::class.java)
-
         val defaultFactorioVersion = Version(1, 1)
 
         private val fileSplittersLua = charArrayOf('.', '/', '\\')

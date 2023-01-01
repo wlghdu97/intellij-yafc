@@ -1,10 +1,11 @@
 package com.xhlab.yafc.parser.data.deserializer
 
-import com.intellij.openapi.diagnostic.Logger
 import com.xhlab.yafc.model.data.*
 import com.xhlab.yafc.parser.FactorioLocalization
 import com.xhlab.yafc.parser.ProgressTextIndicator
+import com.xhlab.yafc.parser.YAFCLogger
 import com.xhlab.yafc.parser.data.SpecialNames
+import com.xhlab.yafc.parser.info
 import org.luaj.vm2.LuaTable
 import org.luaj.vm2.LuaValue
 import kotlin.reflect.KType
@@ -14,6 +15,7 @@ class CommonDeserializer constructor(
     private val parent: FactorioDataDeserializer,
     private val data: LuaTable,
     private val prototypes: LuaTable,
+    private val logger: YAFCLogger
 ) {
     internal val raw = (data["raw"] as? LuaTable) ?: LuaValue.tableOf()
 
@@ -275,7 +277,7 @@ class CommonDeserializer constructor(
     }
 
     private fun splitFluid(basic: MutableFluid, temperature: Int): MutableFluid {
-        logger.info("Splitting fluid ${basic.name} at $temperature")
+        logger.info<CommonDeserializer>("Splitting fluid ${basic.name} at $temperature")
         if (basic.variants.isEmpty()) {
             basic.variants = arrayListOf(basic)
         }
@@ -647,9 +649,5 @@ class CommonDeserializer constructor(
 
     interface Deserializer {
         fun deserialize(table: LuaTable)
-    }
-
-    companion object {
-        private val logger = Logger.getInstance(CommonDeserializer::class.java)
     }
 }
