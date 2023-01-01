@@ -566,7 +566,11 @@ class CommonDeserializer constructor(
                 if (this != LuaValue.NIL) this.tofloat() else defaultIconSize
             }
 
-            obj.iconSpec = listOf(FactorioIconPart(path = path, size = size))
+            val mipmaps = with(table["icon_mipmaps"]) {
+                if (this != LuaValue.NIL) this.toint() else 1
+            }
+
+            obj.iconSpec = listOf(FactorioIconPart(path = path, size = size, mipmaps = mipmaps))
         } else if (icons.istable()) {
             val iconList = icons.checktable()
             obj.iconSpec = iconList.keys().map {
@@ -600,6 +604,10 @@ class CommonDeserializer constructor(
                     }
                 }
 
+                val mipmaps = with(item["icon_mipmaps"]) {
+                    if (this != LuaValue.NIL) this.toint() else 1
+                }
+
                 FactorioIconPart(
                     path = path,
                     size = size,
@@ -609,7 +617,8 @@ class CommonDeserializer constructor(
                     g = tint.g,
                     b = tint.b,
                     a = tint.a,
-                    scale = scale
+                    scale = scale,
+                    mipmaps = mipmaps
                 )
             }
         }
