@@ -58,6 +58,11 @@
                              id="settings.yafc"
                              key="settings.yafc.name"
                              bundle="messages.YAFCBundle"/>
+        <projectConfigurable parentId="settings.yafc"
+                             instance="com.xhlab.yafc.ide.settings.yafc.YAFCMilestoneSettingsConfigurable"
+                             id="settings.yafc.milestones"
+                             key="settings.yafc.milestones.name"
+                             bundle="messages.YAFCBundle"/>
 
         <applicationService
                 serviceImplementation="com.xhlab.yafc.ide.settings.factorio.path.FactorioPathManager"/>

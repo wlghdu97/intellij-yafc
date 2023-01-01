@@ -145,8 +145,29 @@ class YAFCProject constructor(private val project: Project) :
             val milestones = FactorioMilestones(database, dependencies)
             registerAnalysis(milestones, emptyList())
             processAnalyses(project.service(), progress, errorCollector)
+            // write newly populated milestones to settings if first sync
+            writeMilestonesToSettingsIfFirstSync(milestones)
         }
     }
+
+    fun recomputeAnalysis(type: FactorioAnalysisType) {
+        ProgressManager.getInstance().run(object : Task.Backgroundable(project, "Recomputing YAFC Analyses") {
+            override fun run(indicator: ProgressIndicator) {
+                val progress = IntellijProgressTextIndicator(indicator)
+                val errorCollector = project.service<ErrorCollector>()
+                storage?.analyses?.recompute(type, project.service(), progress, errorCollector)
+                errorCollector.flush()
+            }
+        })
+    }
+
+    private fun writeMilestonesToSettingsIfFirstSync(milestones: FactorioMilestones) {
+        val settings = project.service<YAFCProjectSettings>()
+        if (settings.firstSync && settings.milestones.isEmpty()) {
+            settings.setMilestones(milestones.currentMilestones.map { it.typeDotName to false })
+        }
+    }
+
     private fun syncPublisher(block: YAFCSyncListener.() -> Unit) {
         val runnable = { block.invoke(project.messageBus.syncPublisher(YAFC_SYNC_TOPIC)) }
         AppUIUtil.invokeLaterIfProjectAlive(project, runnable)
@@ -169,7 +190,7 @@ class YAFCProject constructor(private val project: Project) :
 
     private fun fireProjectSyncFailureNotification(content: String, action: AnAction? = null) {
         NotificationGroupManager.getInstance()
-            .getNotificationGroup("YAFC Project Sync")
+            .getNotificationGroup(YAFC_SYNC_NOTIFICATION_GROUP)
             .createNotification(YAFCBundle.message("yafc.project.sync.failed"), content, NotificationType.ERROR)
             .apply {
                 if (action != null) {
@@ -221,6 +242,8 @@ class YAFCProject constructor(private val project: Project) :
     }
 
     companion object {
+        private const val YAFC_SYNC_NOTIFICATION_GROUP = "YAFC Project Sync"
+
         val YAFC_SYNC_TOPIC = Topic.create(
             "com.xhlab.yafc.ide.project.sync.YAFCSyncListener",
             YAFCSyncListener::class.java,
