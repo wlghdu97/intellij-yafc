@@ -27,6 +27,7 @@ import com.xhlab.yafc.ide.settings.factorio.path.FactorioPath
 import com.xhlab.yafc.ide.settings.factorio.path.FactorioPathChangeListener
 import com.xhlab.yafc.ide.settings.factorio.path.FactorioPathChangeListener.Companion.YAFC_FACTORIO_PATH_TOPIC
 import com.xhlab.yafc.ide.settings.factorio.path.FactorioPathManager
+import com.xhlab.yafc.ide.ui.IconCollection
 import com.xhlab.yafc.model.analysis.TechnologyLoopsFinder
 import com.xhlab.yafc.model.analysis.YAFCDependencies
 import com.xhlab.yafc.model.analysis.factorio.*
@@ -106,6 +107,8 @@ class YAFCProject constructor(private val project: Project) :
                 val logger = project.service<YAFCLogger>()
                 val dataSource = FactorioDataSource(progress, logger)
 
+                IconCollection.resetIconCache()
+
                 syncVariablesChanged = false
                 updateSyncStarted()
 
@@ -122,7 +125,7 @@ class YAFCProject constructor(private val project: Project) :
                 progress.setText("Post-processing", "Creating project")
                 val errorCollector = project.service<ErrorCollector>()
                 val analyses = createAndProcessAnalyses(database, dependencies, progress, errorCollector)
-                storage = YAFCStorage(database, dependencies, analyses)
+                storage = YAFCStorage(database, dependencies, analyses, dataSource)
 
                 errorCollector.flush()
                 updateSyncSucceeded()

@@ -2,10 +2,13 @@ package com.xhlab.yafc.ide.settings.yafc
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.IconLoader
 import com.intellij.ui.*
+import com.intellij.util.IconUtil
 import com.intellij.util.ui.ColumnInfo
 import com.intellij.util.ui.ListTableModel
 import com.xhlab.yafc.ide.YAFCBundle
+import com.xhlab.yafc.ide.ui.IconCollection
 import com.xhlab.yafc.model.ProjectPerItemFlag
 import com.xhlab.yafc.model.YAFCProject
 import com.xhlab.yafc.model.YAFCProjectSettings
@@ -25,8 +28,9 @@ data class YAFCMilestoneDescriptor(
  * @see org.jetbrains.kotlin.idea.script.configuration.KotlinScriptDefinitionsModel
  */
 class YAFCMilestoneModel private constructor(
+    project: Project,
     definitions: MutableList<YAFCMilestoneDescriptor>
-) : ListTableModel<YAFCMilestoneDescriptor>(arrayOf(MilestoneEnabled(), MilestoneName()), definitions, 0) {
+) : ListTableModel<YAFCMilestoneDescriptor>(arrayOf(MilestoneEnabled(), MilestoneName(project)), definitions, 0) {
 
     private class MilestoneEnabled : ColumnInfo<YAFCMilestoneDescriptor, Boolean>(
         YAFCBundle.message("settings.yafc.milestones.descriptor.enabled")
@@ -46,7 +50,9 @@ class YAFCMilestoneModel private constructor(
         override fun isCellEditable(item: YAFCMilestoneDescriptor?): Boolean = true
     }
 
-    private class MilestoneName : ColumnInfo<YAFCMilestoneDescriptor, FactorioObject>(
+    private class MilestoneName constructor(
+        project: Project
+    ) : ColumnInfo<YAFCMilestoneDescriptor, FactorioObject>(
         YAFCBundle.message("settings.yafc.milestones.descriptor.name")
     ) {
         private val milestoneNameRenderer = object : ColoredTableCellRenderer() {
@@ -60,6 +66,12 @@ class YAFCMilestoneModel private constructor(
             ) {
                 if (value is FactorioObject) {
                     append(value.locName, SimpleTextAttributes.REGULAR_ATTRIBUTES, true)
+                    val dataSource = project.service<YAFCProject>().storage?.dataSource
+                    if (dataSource != null) {
+                        icon = IconLoader.createLazy {
+                            IconCollection.getIcon(dataSource, value) ?: IconUtil.getEmptyIcon(false)
+                        }
+                    }
                 }
             }
         }
@@ -75,7 +87,7 @@ class YAFCMilestoneModel private constructor(
 
     companion object {
         fun createModel(project: Project): YAFCMilestoneModel {
-            return YAFCMilestoneModel(createModelItems(project))
+            return YAFCMilestoneModel(project, createModelItems(project))
         }
 
         fun createModelItems(project: Project): MutableList<YAFCMilestoneDescriptor> {

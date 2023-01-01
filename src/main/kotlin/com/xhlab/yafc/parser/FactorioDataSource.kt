@@ -131,178 +131,174 @@ class FactorioDataSource constructor(
         locale: String?,
         yafcVersion: Version
     ): YAFCDatabase {
-        try {
-            sendCurrentLoadingModChange(null)
+        sendCurrentLoadingModChange(null)
 
-            val modSettings = File(modPath, "mod-settings.dat")
-            sendProgressUpdate("Initializing", "Loading mod list")
+        val modSettings = File(modPath, "mod-settings.dat")
+        sendProgressUpdate("Initializing", "Loading mod list")
 
-            val modList = File(modPath, "mod-list.json")
-            val versionSpecifiers = hashMapOf<String, Version>()
+        val modList = File(modPath, "mod-list.json")
+        val versionSpecifiers = hashMapOf<String, Version>()
 
-            allMods.clear()
-            if (modList.exists()) {
-                val mods = gson.fromJson(modList.reader(), ModList::class.java)
-                mods.mods.asSequence()
-                    .filter { it.enabled }
-                    .map { it.name }
-                    .forEach { allMods[it] = null }
-                mods.mods.asSequence()
-                    .filter { it.enabled && !it.version.isNullOrEmpty() }
-                    .forEach { versionSpecifiers[it.name] = Version.fromString(it.version!!) }
-            } else {
-                allMods["base"] = null
-            }
+        allMods.clear()
+        if (modList.exists()) {
+            val mods = gson.fromJson(modList.reader(), ModList::class.java)
+            mods.mods.asSequence()
+                .filter { it.enabled }
+                .map { it.name }
+                .forEach { allMods[it] = null }
+            mods.mods.asSequence()
+                .filter { it.enabled && !it.version.isNullOrEmpty() }
+                .forEach { versionSpecifiers[it.name] = Version.fromString(it.version!!) }
+        } else {
+            allMods["base"] = null
+        }
 
-            allMods["core"] = null
-            logger.debug<FactorioDataSource>("Mod list parsed")
+        allMods["core"] = null
+        logger.debug<FactorioDataSource>("Mod list parsed")
 
-            val allFoundMods = arrayListOf<ModInfo>()
-            findMods(factorioDataPath, allFoundMods)
-            if (modPath != factorioDataPath && !modPath.isNullOrBlank()) {
-                findMods(modPath, allFoundMods)
-            }
+        val allFoundMods = arrayListOf<ModInfo>()
+        findMods(factorioDataPath, allFoundMods)
+        if (modPath != factorioDataPath && !modPath.isNullOrBlank()) {
+            findMods(modPath, allFoundMods)
+        }
 
-            var factorioVersion: Version? = null
-            for (mod in allFoundMods) {
-                sendCurrentLoadingModChange(mod.name)
-                if (mod.name == "base") {
-                    if (factorioVersion == null || mod.parsedVersion > factorioVersion) {
-                        factorioVersion = mod.parsedVersion
-                    }
+        var factorioVersion: Version? = null
+        for (mod in allFoundMods) {
+            sendCurrentLoadingModChange(mod.name)
+            if (mod.name == "base") {
+                if (factorioVersion == null || mod.parsedVersion > factorioVersion) {
+                    factorioVersion = mod.parsedVersion
                 }
             }
+        }
 
-            // map allFoundMods to allMods
-            for (mod in allFoundMods) {
-                sendCurrentLoadingModChange(mod.name)
-                val existing = allMods[mod.name]
-                val version = versionSpecifiers[mod.name]
-                if (mod.validForFactorioVersion(factorioVersion) && allMods.containsKey(mod.name) &&
-                    (existing == null || mod.parsedVersion > existing.parsedVersion || (mod.parsedVersion == existing.parsedVersion && existing.zipArchive != null && mod.zipArchive == null)) &&
-                    (!versionSpecifiers.containsKey(mod.name) || mod.parsedVersion == version)
-                ) {
-                    allMods[mod.name] = mod
-                }
+        // map allFoundMods to allMods
+        for (mod in allFoundMods) {
+            sendCurrentLoadingModChange(mod.name)
+            val existing = allMods[mod.name]
+            val version = versionSpecifiers[mod.name]
+            if (mod.validForFactorioVersion(factorioVersion) && allMods.containsKey(mod.name) &&
+                (existing == null || mod.parsedVersion > existing.parsedVersion || (mod.parsedVersion == existing.parsedVersion && existing.zipArchive != null && mod.zipArchive == null)) &&
+                (!versionSpecifiers.containsKey(mod.name) || mod.parsedVersion == version)
+            ) {
+                allMods[mod.name] = mod
             }
+        }
 
+        for ((name, mod) in allMods.entries) {
+            sendCurrentLoadingModChange(name)
+            if (mod == null) {
+                throw RuntimeException("Mod not found: $name. Try loading this pack in Factorio first.")
+            }
+        }
+
+        val modsToDisable = arrayListOf<String>()
+        do {
+            modsToDisable.clear()
             for ((name, mod) in allMods.entries) {
                 sendCurrentLoadingModChange(name)
-                if (mod == null) {
-                    throw RuntimeException("Mod not found: $name. Try loading this pack in Factorio first.")
+                if (mod != null && !mod.checkDependencies(allMods, modsToDisable)) {
+                    modsToDisable.add(name)
                 }
             }
-
-            val modsToDisable = arrayListOf<String>()
-            do {
-                modsToDisable.clear()
-                for ((name, mod) in allMods.entries) {
-                    sendCurrentLoadingModChange(name)
-                    if (mod != null && !mod.checkDependencies(allMods, modsToDisable)) {
-                        modsToDisable.add(name)
-                    }
-                }
-
-                sendCurrentLoadingModChange(null)
-
-                for (mod in modsToDisable) {
-                    allMods.remove(mod)
-                }
-            } while (modsToDisable.isNotEmpty())
 
             sendCurrentLoadingModChange(null)
-            sendProgressUpdate("Initializing", "Creating Lua context")
 
-            val modsToLoad = allMods.keys.toHashSet()
-            val modLoadOrder = Array(modsToLoad.size) { "" }
-            modLoadOrder[0] = "core"
-            modsToLoad.remove("core")
-
-            var index = 1
-            val sortedMods = modsToLoad.sortedBy { it.lowercase() }.toMutableList()
-            val currentLoadBatch = arrayListOf<String>()
-            while (modsToLoad.size > 0) {
-                currentLoadBatch.clear()
-                for (mod in sortedMods) {
-                    if (allMods[mod]?.canLoad(allMods, modsToLoad) == true) {
-                        currentLoadBatch.add(mod)
-                    }
-                }
-                if (currentLoadBatch.isEmpty()) {
-                    throw RuntimeException(
-                        "Mods dependencies are circular. Unable to load mods: " + modsToLoad.joinToString(", ")
-                    )
-                }
-                for (mod in currentLoadBatch) {
-                    modLoadOrder[index++] = mod
-                    modsToLoad.remove(mod)
-                }
-
-                sortedMods.removeIf { !modsToLoad.contains(it) }
+            for (mod in modsToDisable) {
+                allMods.remove(mod)
             }
+        } while (modsToDisable.isNotEmpty())
 
-            if (locale != null) {
-                for (mod in modLoadOrder) {
-                    sendCurrentLoadingModChange(mod)
-                    loadModLocale(mod, locale)
+        sendCurrentLoadingModChange(null)
+        sendProgressUpdate("Initializing", "Creating Lua context")
+
+        val modsToLoad = allMods.keys.toHashSet()
+        val modLoadOrder = Array(modsToLoad.size) { "" }
+        modLoadOrder[0] = "core"
+        modsToLoad.remove("core")
+
+        var index = 1
+        val sortedMods = modsToLoad.sortedBy { it.lowercase() }.toMutableList()
+        val currentLoadBatch = arrayListOf<String>()
+        while (modsToLoad.size > 0) {
+            currentLoadBatch.clear()
+            for (mod in sortedMods) {
+                if (allMods[mod]?.canLoad(allMods, modsToLoad) == true) {
+                    currentLoadBatch.add(mod)
                 }
             }
-            // Fill the rest with the locale keys from english
-            if (locale != "en") {
-                for (mod in modLoadOrder) {
-                    sendCurrentLoadingModChange(mod)
-                    loadModLocale(mod, "en")
-                }
+            if (currentLoadBatch.isEmpty()) {
+                throw RuntimeException(
+                    "Mods dependencies are circular. Unable to load mods: " + modsToLoad.joinToString(", ")
+                )
+            }
+            for (mod in currentLoadBatch) {
+                modLoadOrder[index++] = mod
+                modsToLoad.remove(mod)
             }
 
-            logger.info<FactorioDataSource>("All mods found! Loading order: " + modLoadOrder.joinToString(", "))
-
-            val preprocess = javaClass.getResourceAsStream("/data/Sandbox.lua")?.readBytes()
-                ?: throw RuntimeException("Sandbox.lua not found from resources")
-            val postprocess = javaClass.getResourceAsStream("/data/Postprocess.lua")?.readBytes()
-                ?: throw RuntimeException("Postprocess.lua not found from resources")
-
-            DataUtils.allMods = modLoadOrder
-            DataUtils.dataPath = factorioDataPath
-            DataUtils.modsPath = modPath
-            DataUtils.expensiveRecipes = expensive
-
-            val dataContext = LuaContext(this, allMods, factorioDataPath, yafcVersion, logger)
-            val settings = if (modSettings.exists()) {
-                LittleEndianDataInputStream(FileInputStream(modSettings)).use {
-                    FactorioPropertyTree().readModSettings(it)
-                }.apply {
-                    logger.info<FactorioDataSource>("Mod settings parsed")
-                }
-            } else {
-                LuaValue.tableOf()
-            }
-
-            // TODO default mod settings
-            dataContext.setGlobal("settings", settings)
-
-            dataContext.exec(preprocess, "Sandbox.lua")
-            dataContext.doModFiles(modLoadOrder, "data.lua")
-            dataContext.doModFiles(modLoadOrder, "data-updates.lua")
-            dataContext.doModFiles(modLoadOrder, "data-final-fixes.lua")
-            dataContext.exec(postprocess, "Postprocess.lua")
-            sendCurrentLoadingModChange(null)
-
-            val deserializer = FactorioDataDeserializer(
-                data = dataContext.data,
-                prototypes = dataContext.defines["prototypes"] as LuaTable,
-                expensiveRecipes = expensive,
-                factorioVersion = factorioVersion ?: defaultFactorioVersion,
-                logger = logger
-            )
-            val db = deserializer.loadData(progress)
-            logger.debug<FactorioDataSource>("Completed!")
-            sendProgressUpdate("Completed!", "Done creating database")
-
-            return db
-        } finally {
-            allMods.clear()
+            sortedMods.removeIf { !modsToLoad.contains(it) }
         }
+
+        if (locale != null) {
+            for (mod in modLoadOrder) {
+                sendCurrentLoadingModChange(mod)
+                loadModLocale(mod, locale)
+            }
+        }
+        // Fill the rest with the locale keys from english
+        if (locale != "en") {
+            for (mod in modLoadOrder) {
+                sendCurrentLoadingModChange(mod)
+                loadModLocale(mod, "en")
+            }
+        }
+
+        logger.info<FactorioDataSource>("All mods found! Loading order: " + modLoadOrder.joinToString(", "))
+
+        val preprocess = javaClass.getResourceAsStream("/data/Sandbox.lua")?.readBytes()
+            ?: throw RuntimeException("Sandbox.lua not found from resources")
+        val postprocess = javaClass.getResourceAsStream("/data/Postprocess.lua")?.readBytes()
+            ?: throw RuntimeException("Postprocess.lua not found from resources")
+
+        DataUtils.allMods = modLoadOrder
+        DataUtils.dataPath = factorioDataPath
+        DataUtils.modsPath = modPath
+        DataUtils.expensiveRecipes = expensive
+
+        val dataContext = LuaContext(this, allMods, factorioDataPath, yafcVersion, logger)
+        val settings = if (modSettings.exists()) {
+            LittleEndianDataInputStream(FileInputStream(modSettings)).use {
+                FactorioPropertyTree().readModSettings(it)
+            }.apply {
+                logger.info<FactorioDataSource>("Mod settings parsed")
+            }
+        } else {
+            LuaValue.tableOf()
+        }
+
+        // TODO default mod settings
+        dataContext.setGlobal("settings", settings)
+
+        dataContext.exec(preprocess, "Sandbox.lua")
+        dataContext.doModFiles(modLoadOrder, "data.lua")
+        dataContext.doModFiles(modLoadOrder, "data-updates.lua")
+        dataContext.doModFiles(modLoadOrder, "data-final-fixes.lua")
+        dataContext.exec(postprocess, "Postprocess.lua")
+        sendCurrentLoadingModChange(null)
+
+        val deserializer = FactorioDataDeserializer(
+            data = dataContext.data,
+            prototypes = dataContext.defines["prototypes"] as LuaTable,
+            expensiveRecipes = expensive,
+            factorioVersion = factorioVersion ?: defaultFactorioVersion,
+            logger = logger
+        )
+        val db = deserializer.loadData(progress)
+        logger.debug<FactorioDataSource>("Completed!")
+        sendProgressUpdate("Completed!", "Done creating database")
+
+        return db
     }
 
     /**
@@ -360,15 +356,15 @@ class FactorioDataSource constructor(
             Version(0, 0)
         }
 
-        val parsedFactorioVersion: Version = if (factorioVersion != null) {
+        private val parsedFactorioVersion: Version = if (factorioVersion != null) {
             Version.fromString(factorioVersion)
         } else {
             defaultFactorioVersion
         }
 
         private val _incompatibilities = arrayListOf<String>()
-        val incompatibilities: List<String> = _incompatibilities
-        val parsedDependencies: List<Dependency> = parseDependencies()
+        private val incompatibilities: List<String> = _incompatibilities
+        private val parsedDependencies: List<Dependency> = parseDependencies()
 
         var zipArchive: ZipFile? = null
         var folder: String? = null
