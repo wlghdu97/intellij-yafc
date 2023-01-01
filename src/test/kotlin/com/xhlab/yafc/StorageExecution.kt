@@ -45,10 +45,12 @@ class StorageExecutor(
             val automation = FactorioAutomationAnalysis(db, dependencies, milestones)
             val cost = FactorioCostAnalysis(db, milestones, automation, false)
             val currentMilestoneCost = FactorioCostAnalysis(db, milestones, automation, true)
+            val technologyScience = FactorioTechnologyScienceAnalysis(db, dependencies, milestones)
             registerAnalysis(milestones, emptyList())
             registerAnalysis(automation, listOf(milestones))
             registerAnalysis(cost, listOf(milestones, automation))
             registerAnalysis(currentMilestoneCost, listOf(milestones, automation))
+            registerAnalysis(technologyScience, listOf(milestones))
             processAnalyses(settings, indicator, errorCollector)
         }
         errorCollector.flush()

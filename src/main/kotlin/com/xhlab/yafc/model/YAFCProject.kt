@@ -146,10 +146,12 @@ class YAFCProject constructor(private val project: Project) :
             val automation = FactorioAutomationAnalysis(database, dependencies, milestones)
             val cost = FactorioCostAnalysis(database, milestones, automation, false)
             val currentMilestoneCost = FactorioCostAnalysis(database, milestones, automation, true)
+            val technologyScience = FactorioTechnologyScienceAnalysis(database, dependencies, milestones)
             registerAnalysis(milestones, emptyList())
             registerAnalysis(automation, listOf(milestones))
             registerAnalysis(cost, listOf(milestones, automation))
             registerAnalysis(currentMilestoneCost, listOf(milestones, automation))
+            registerAnalysis(technologyScience, listOf(milestones))
             processAnalyses(project.service(), progress, errorCollector)
             // write newly populated milestones to settings if first sync
             writeMilestonesToSettingsIfFirstSync(milestones)

@@ -83,8 +83,14 @@ class FactorioIdRange<T : FactorioObject>(
 
     fun <TValue> createMapping() = Mapping<T, TValue>(this)
 
-    fun <TOther : FactorioObject, TValue> createMapping(other: FactorioIdRange<TOther>) =
-        DoubleMapping<T, TOther, TValue>(this, other)
+    fun <TOther : FactorioObject, TValue> createDoubleMapping(
+        other: FactorioIdRange<TOther>,
+        mapFunc: (T, TOther) -> TValue
+    ) = DoubleMapping(this, other, mapFunc)
+
+    fun <TValue> createDoubleMapping(
+        mapFunc: (T, T) -> TValue
+    ) = DoubleMapping(this, this, mapFunc)
 
     fun <TValue> createMapping(mapFunc: (T) -> TValue): Mapping<T, TValue> {
         val map = createMapping<TValue>()
@@ -182,17 +188,27 @@ class Mapping<TKey : FactorioObject, TValue> internal constructor(
 
 class DoubleMapping<TKey1 : FactorioObject, TKey2 : FactorioObject, TValue> constructor(
     key1: FactorioIdRange<TKey1>,
-    key2: FactorioIdRange<TKey2>
+    key2: FactorioIdRange<TKey2>,
+    mapFunc: (TKey1, TKey2) -> TValue
 ) {
     private val offset1 = key1.start
     private val offset2 = key2.start
-    private val count1 = key1.count
+    private val count1 = key1.size
+    private val count2 = key2.size
 
     @Suppress("UNCHECKED_CAST")
-    private val data = arrayOfNulls<Any>(count1 * key2.count) as Array<TValue?>
+    private val data = Array(count1 * count2) {
+        val x = it / count1
+        val y = it % count2
+        mapFunc(key1[x], key2[y]) as Any
+    } as Array<TValue?>
 
     operator fun get(pair: Pair<TKey1, TKey2>): TValue? =
         data[(pair.first.id.id - offset1) * count1 + (pair.second.id.id - offset2)]
+
+    operator fun set(pair: Pair<TKey1, TKey2>, value: TValue?) {
+        data[(pair.first.id.id - offset1) * count1 + (pair.second.id.id - offset2)] = value
+    }
 
     fun copyRow(from: TKey1, to: TKey1) {
         if (from == to) {
