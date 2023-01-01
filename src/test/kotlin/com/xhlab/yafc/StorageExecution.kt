@@ -42,7 +42,9 @@ class StorageExecutor(
         val settings = FakeYAFCProjectSettings()
         FactorioAnalyses().apply {
             val milestones = FactorioMilestones(db, dependencies)
+            val automation = FactorioAutomationAnalysis(db, dependencies, milestones)
             registerAnalysis(milestones, emptyList())
+            registerAnalysis(automation, listOf(milestones))
             processAnalyses(settings, indicator, errorCollector)
         }
         errorCollector.flush()

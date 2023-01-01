@@ -143,7 +143,9 @@ class YAFCProject constructor(private val project: Project) :
     ): FactorioAnalyses {
         return FactorioAnalyses().apply {
             val milestones = FactorioMilestones(database, dependencies)
+            val automation = FactorioAutomationAnalysis(database, dependencies, milestones)
             registerAnalysis(milestones, emptyList())
+            registerAnalysis(automation, listOf(milestones))
             processAnalyses(project.service(), progress, errorCollector)
             // write newly populated milestones to settings if first sync
             writeMilestonesToSettingsIfFirstSync(milestones)
