@@ -1,12 +1,16 @@
 package com.xhlab.yafc.model.analysis
 
 import com.xhlab.yafc.model.data.FactorioId
+import com.xhlab.yafc.model.util.EnumFlag
+import java.util.EnumSet
+
+typealias DependencyListFlags = EnumSet<DependencyList.Flag>
 
 data class DependencyList(
-    val flags: Flags,
+    val flags: DependencyListFlags,
     val elements: Array<FactorioId>
 ) {
-    enum class Flags(val value: Int) {
+    enum class Flag(override val value: Int) : EnumFlag {
         REQUIRE_EVERYTHING(0x100),
         ONE_TIME_INVESTMENT(0x200),
 

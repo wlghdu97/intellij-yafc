@@ -46,6 +46,8 @@
 
         <postStartupActivity implementation="com.xhlab.yafc.ide.project.YAFCProjectStartupActivity" order="last"/>
 
+        <projectService serviceInterface="com.xhlab.yafc.model.ErrorCollector"
+                        serviceImplementation="com.xhlab.yafc.ide.model.IntellijErrorCollector"/>
         <projectService serviceInterface="com.xhlab.yafc.parser.YAFCLogger"
                         serviceImplementation="com.xhlab.yafc.ide.model.IntellijYAFCLogger"/>
         <notificationGroup id="YAFC Project Sync" displayType="BALLOON"/>

@@ -27,8 +27,12 @@ import com.xhlab.yafc.ide.settings.factorio.path.FactorioPath
 import com.xhlab.yafc.ide.settings.factorio.path.FactorioPathChangeListener
 import com.xhlab.yafc.ide.settings.factorio.path.FactorioPathChangeListener.Companion.YAFC_FACTORIO_PATH_TOPIC
 import com.xhlab.yafc.ide.settings.factorio.path.FactorioPathManager
+import com.xhlab.yafc.model.analysis.TechnologyLoopsFinder
+import com.xhlab.yafc.model.analysis.YAFCDependencies
+import com.xhlab.yafc.model.analysis.factorio.*
 import com.xhlab.yafc.model.data.YAFCDatabase
 import com.xhlab.yafc.parser.FactorioDataSource
+import com.xhlab.yafc.parser.ProgressTextIndicator
 import com.xhlab.yafc.parser.YAFCLogger
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -38,7 +42,7 @@ class YAFCProject constructor(private val project: Project) :
     val yafcVersion: Version
 
     @Volatile
-    var db: YAFCDatabase? = null
+    var storage: YAFCStorage? = null
         private set
 
     val lastSyncFailed: Boolean
@@ -67,7 +71,7 @@ class YAFCProject constructor(private val project: Project) :
     }
 
     fun isSyncNeeded(): Boolean {
-        return (project.service<YAFCProject>().db == null || syncVariablesChanged)
+        return (project.service<YAFCProject>().storage == null || syncVariablesChanged)
     }
 
     fun syncDatabase() {
@@ -104,13 +108,23 @@ class YAFCProject constructor(private val project: Project) :
 
                 syncVariablesChanged = false
                 updateSyncStarted()
-                db = dataSource.parse(
+
+                val database = dataSource.parse(
                     factorioDataPath = factorioPath.dataFile.path,
                     modPath = modPath?.file?.path,
                     expensive = false,
                     locale = "en",
                     yafcVersion = yafcVersion
                 )
+                progress.setText("Post-processing", "Calculating dependencies")
+                val dependencies = YAFCDependencies(database)
+                TechnologyLoopsFinder.findTechnologyLoops(database)
+                progress.setText("Post-processing", "Creating project")
+                val errorCollector = project.service<ErrorCollector>()
+                val analyses = createAndProcessAnalyses(database, dependencies, progress, errorCollector)
+                storage = YAFCStorage(database, dependencies, analyses)
+
+                errorCollector.flush()
                 updateSyncSucceeded()
             }
 
@@ -121,6 +135,18 @@ class YAFCProject constructor(private val project: Project) :
         })
     }
 
+    private fun createAndProcessAnalyses(
+        database: YAFCDatabase,
+        dependencies: YAFCDependencies,
+        progress: ProgressTextIndicator,
+        errorCollector: ErrorCollector
+    ): FactorioAnalyses {
+        return FactorioAnalyses().apply {
+            val milestones = FactorioMilestones(database, dependencies)
+            registerAnalysis(milestones, emptyList())
+            processAnalyses(project.service(), progress, errorCollector)
+        }
+    }
     private fun syncPublisher(block: YAFCSyncListener.() -> Unit) {
         val runnable = { block.invoke(project.messageBus.syncPublisher(YAFC_SYNC_TOPIC)) }
         AppUIUtil.invokeLaterIfProjectAlive(project, runnable)

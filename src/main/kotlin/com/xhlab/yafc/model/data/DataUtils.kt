@@ -2,6 +2,9 @@ package com.xhlab.yafc.model.data
 
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.util.MathUtil.clamp
+import com.xhlab.yafc.model.util.EnumFlag
+import com.xhlab.yafc.model.util.and
+import com.xhlab.yafc.model.util.value
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.*
@@ -423,16 +426,21 @@ object DataUtils {
 
     private val amountBuilder = StringBuilder()
 
-//    public static bool HasFlags<T>(this T enunmeration, T flags) where T:unmanaged, Enum
-//    {
-//        var target = Unsafe.As<T, int>(ref flags)
-//        return (Unsafe.As<T, int>(ref enunmeration) & target) == target
-//    }
-//
-//    public static bool HasFlagAny<T>(this T enunmeration, T flags) where T:unmanaged, Enum
-//    {
-//        return (Unsafe.As<T, int>(ref enunmeration) & Unsafe.As<T, int>(ref flags)) != 0
-//    }
+    inline fun <reified T> hasFlags(target: EnumSet<T>, flags: EnumSet<T>): Boolean where T : Enum<T>, T : EnumFlag {
+        return if (target.isEmpty() || flags.isEmpty()) {
+            false
+        } else {
+            (target.value and flags.value) == flags.value
+        }
+    }
+
+    inline fun <reified T> hasFlagAny(target: EnumSet<T>, flags: EnumSet<T>): Boolean where T : Enum<T>, T : EnumFlag {
+        return if (target.isEmpty() || flags.isEmpty()) {
+            false
+        } else {
+            (target.value and flags.value) != 0
+        }
+    }
 
     fun formatTime(time: Float): String {
         amountBuilder.clear()

@@ -72,7 +72,7 @@ class FactorioIdRange<T : FactorioObject>(
     end: Int,
     val source: List<FactorioObject>
 ) {
-    val count = end - start
+    val size = end - start
 
     @Suppress("UNCHECKED_CAST")
     val all = source.subList(start, end).map { it as T }
@@ -102,7 +102,7 @@ class Mapping<TKey : FactorioObject, TValue> internal constructor(
     private val offset: Int = source.start
 
     @Suppress("UNCHECKED_CAST")
-    private val data = arrayOfNulls<Any>(source.count) as Array<TValue?>
+    private val data = arrayOfNulls<Any>(source.size) as Array<TValue?>
 
     override val size: Int
         get() = data.size
@@ -130,6 +130,14 @@ class Mapping<TKey : FactorioObject, TValue> internal constructor(
         return prev
     }
 
+    operator fun set(id: FactorioId, value: TValue?) {
+        data[id.id - offset] = value
+    }
+
+    operator fun set(key: TKey, value: TValue?) {
+        put(key, value)
+    }
+
     override fun remove(key: TKey): TValue? {
         throw RuntimeException("remove in Mapping is not supported")
     }
@@ -146,7 +154,11 @@ class Mapping<TKey : FactorioObject, TValue> internal constructor(
     }
 
     override fun clear() {
-        data.fill(null)
+        fill(null)
+    }
+
+    fun fill(value: TValue?) {
+        data.fill(value)
     }
 
     override val keys: MutableSet<TKey>

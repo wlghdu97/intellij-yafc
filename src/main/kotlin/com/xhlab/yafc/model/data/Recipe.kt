@@ -2,6 +2,7 @@ package com.xhlab.yafc.model.data
 
 import com.xhlab.yafc.model.analysis.DependencyList
 import com.xhlab.yafc.model.analysis.IDependencyCollector
+import com.xhlab.yafc.model.util.toSet
 
 sealed interface Recipe : RecipeOrTechnology {
     val technologyUnlock: List<Technology>
@@ -19,7 +20,7 @@ sealed interface Recipe : RecipeOrTechnology {
     override fun getDependencies(collector: IDependencyCollector, temp: MutableList<FactorioObject>) {
         super.getDependencies(collector, temp)
         if (!enabled) {
-            collector.addObject(technologyUnlock, DependencyList.Flags.TECHNOLOGY_UNLOCK)
+            collector.addObject(technologyUnlock, DependencyList.Flag.TECHNOLOGY_UNLOCK.toSet())
         }
     }
 

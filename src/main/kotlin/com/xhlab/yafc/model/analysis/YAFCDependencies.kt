@@ -5,15 +5,15 @@ import com.xhlab.yafc.model.data.FactorioObject
 import com.xhlab.yafc.model.data.Mapping
 import com.xhlab.yafc.model.data.YAFCDatabase
 
-class Dependencies constructor(db: YAFCDatabase) {
-    val dependencyList: Mapping<FactorioObject, List<DependencyList>>
-    val reverseDependencies: Mapping<FactorioObject, MutableList<FactorioId>>
+class YAFCDependencies constructor(db: YAFCDatabase) {
+    val dependencyList: Mapping<FactorioObject, Array<DependencyList>>
+    val reverseDependencies: Mapping<FactorioObject, HashSet<FactorioId>>
 
     init {
         dependencyList = db.objects.createMapping()
         reverseDependencies = db.objects.createMapping()
         for (obj in db.objects.all) {
-            reverseDependencies[obj] = arrayListOf()
+            reverseDependencies[obj] = HashSet(0)
         }
 
         val collector = DependencyCollector()
@@ -37,18 +37,18 @@ class Dependencies constructor(db: YAFCDatabase) {
     private class DependencyCollector : IDependencyCollector {
         private val list = arrayListOf<DependencyList>()
 
-        override fun addId(raw: List<FactorioId>, flags: DependencyList.Flags) {
+        override fun addId(raw: List<FactorioId>, flags: DependencyListFlags) {
             list.add(DependencyList(flags, raw.toTypedArray()))
         }
 
-        override fun addObject(raw: List<FactorioObject>, flags: DependencyList.Flags) {
+        override fun addObject(raw: List<FactorioObject>, flags: DependencyListFlags) {
             val elems = Array(raw.size) { raw[it].id }
             list.add(DependencyList(flags, elems))
         }
 
-        fun pack(): List<DependencyList> {
-            return list.apply {
-                clear()
+        fun pack(): Array<DependencyList> {
+            return list.toTypedArray().apply {
+                list.clear()
             }
         }
     }
