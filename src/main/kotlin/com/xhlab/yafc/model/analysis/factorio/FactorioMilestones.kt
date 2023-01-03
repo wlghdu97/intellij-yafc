@@ -144,6 +144,7 @@ class FactorioMilestones constructor(
 
         val dependencyList = dependencies.dependencyList
         val reverseDependencies = dependencies.reverseDependencies
+        val milestonesNotReachable = arrayListOf<FactorioObject>()
 
         var nextMilestoneMask = 0x2uL
         var accessibleObjects = 0
@@ -152,7 +153,17 @@ class FactorioMilestones constructor(
         for (i in 0..milestones.size) {
             flagMask = flagMask or (1uL shl i)
             if (i > 0) {
-                val milestone = currentMilestones[i - 1]
+                val milestone = currentMilestones.getOrNull(i - 1)
+                if (milestone == null) {
+                    for (pack in db.allSciencePacks) {
+                        if (currentMilestones.indexOf(pack) == -1) {
+                            currentMilestones.add(pack)
+                            milestonesNotReachable.add(pack)
+                        }
+                    }
+                    break
+                }
+
                 logger.info("Processing milestone ${milestone.locName}")
                 processingQueue.add(milestone.id)
                 processing[milestone] = ProcessingFlag.INITIAL or ProcessingFlag.IN_QUEUE
@@ -249,6 +260,14 @@ class FactorioMilestones constructor(
                     ErrorSeverity.ANALYSIS_WARNING
                 )
             }
+
+            (milestonesNotReachable.isNotEmpty()) -> {
+                val locNames = milestonesNotReachable.joinToString(", ") { it.locName }
+                errorCollector.appendError(
+                    MilestonesNotReachable.format(locNames) + MaybeBug + MilestoneAnalysisIsImportant + UseDependencyExplorer,
+                    ErrorSeverity.ANALYSIS_WARNING
+                );
+            }
         }
 
         val elapsedTime = System.currentTimeMillis() - time
@@ -292,5 +311,7 @@ class FactorioMilestones constructor(
             "\nA lot of YAFC's systems rely on objects being accessible, so some features may not work as intended."
         private const val UseDependencyExplorer =
             "\n\nFor this reason YAFC has a Dependency Explorer that allows you to manually enable some of the core recipes. YAFC will iteratively try to unlock all the dependencies after each recipe you manually enabled. For most modpacks it's enough to unlock a few early recipes like any special recipes for plates that everything in the mod is based on."
+        private const val MilestonesNotReachable =
+            "There are some milestones that are not accessible: %s. You may remove these from milestone list,"
     }
 }
