@@ -49,11 +49,12 @@ class YAFCMilestoneSettingsView constructor(project: Project) {
                 val target = db.objects.all
                 val excluded = tableModel.items.map { it.target }.toSet()
                 val dialog = YAFCObjectChooserDialog(project, milestone, target, excluded)
-                dialog.showAndGet()
-                if (dialog.selectedObjects.isNotEmpty()) {
-                    val newDescriptor = YAFCMilestoneDescriptor(dialog.selectedObjects[0], false)
-                    tableModel.addRow(newDescriptor)
-                    selectIfNeeded(newDescriptor)
+                if (dialog.showAndGet()) {
+                    if (dialog.selectedObjects.isNotEmpty()) {
+                        val newDescriptor = YAFCMilestoneDescriptor(dialog.selectedObjects[0], false)
+                        tableModel.addRow(newDescriptor)
+                        selectIfNeeded(newDescriptor)
+                    }
                 }
             }
             .createPanel()
