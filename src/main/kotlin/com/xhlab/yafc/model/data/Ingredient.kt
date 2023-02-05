@@ -11,7 +11,12 @@ sealed interface Ingredient : IFactorioObjectWrapper {
         get() {
             var text = goods.locName
             if (amount != 1f) {
-                text = "${amount}x $text"
+                val amountText = if (amount % 1f == 0f) {
+                    String.format("%.0f", amount)
+                } else {
+                    amount.toString()
+                }
+                text = "${amountText}x $text"
             }
             if (!temperature.isAny()) {
                 text += " ($temperature)"
