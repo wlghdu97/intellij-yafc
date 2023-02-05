@@ -403,7 +403,7 @@ class CommonDeserializer constructor(
 
                 3 -> {
                     if (chr == ']') {
-                        localeBuilder.removeRange(tagStart, index - tagStart + 1)
+                        localeBuilder.deleteRange(tagStart, index + 1)
                         index = tagStart - 1
                         state = 0
                     }
