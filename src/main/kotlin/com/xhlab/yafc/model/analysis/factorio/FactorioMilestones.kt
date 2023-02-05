@@ -32,6 +32,8 @@ class FactorioMilestones constructor(
     var lockedMask: ULong = 0uL
         private set
 
+    val highestMilestone: Mapping<FactorioObject, FactorioObject?> = db.objects.createMapping()
+
     // was part of AnalysisExtensions
     fun isAccessible(obj: FactorioObject): Boolean = milestoneResult[obj] != 0uL
 
@@ -51,27 +53,6 @@ class FactorioMilestones constructor(
     private fun projectSettingsChanged(settings: YAFCProjectSettings, visualOnly: Boolean) {
         if (!visualOnly) {
             lockedMask = getLockedMaskFromProject(settings)
-        }
-    }
-
-    fun getHighest(target: FactorioObject?, all: Boolean): FactorioObject? {
-        if (target == null) {
-            return null
-        }
-
-        var ms = milestoneResult[target] ?: 0uL
-        if (!all) {
-            ms = ms and lockedMask
-        }
-        if (ms == 0uL) {
-            return null
-        }
-
-        val msb = ms.highestBitSet - 1
-        return if (msb < 0 || msb >= currentMilestones.size) {
-            null
-        } else {
-            currentMilestones[msb]
         }
     }
 
@@ -270,6 +251,11 @@ class FactorioMilestones constructor(
             }
         }
 
+        // pre-calculate highest milestones of all
+        db.objects.all.forEach {
+            highestMilestone[it] = getHighest(it, true)
+        }
+
         val elapsedTime = System.currentTimeMillis() - time
         logger.info("Milestones calculation finished in $elapsedTime ms.")
     }
@@ -294,6 +280,23 @@ class FactorioMilestones constructor(
                     MaybeBug + MilestoneAnalysisIsImportant + UseDependencyExplorer,
             ErrorSeverity.ANALYSIS_WARNING
         )
+    }
+
+    fun getHighest(target: FactorioObject, all: Boolean): FactorioObject? {
+        var ms = milestoneResult[target] ?: 0uL
+        if (!all) {
+            ms = ms and lockedMask
+        }
+        if (ms == 0uL) {
+            return null
+        }
+
+        val msb = ms.highestBitSet - 1
+        return if (msb < 0 || msb >= currentMilestones.size) {
+            null
+        } else {
+            currentMilestones[msb]
+        }
     }
 
     override val description =

@@ -75,7 +75,7 @@ class YAFCObjectChooserDialog constructor(
         with(list) {
             emptyText.text = "DB Sync is not done"
             model = filteringListModel
-            cellRenderer = YAFCFactorioObjectListCellRenderer(project)
+            cellRenderer = YAFCFactorioObjectListCellRenderer(project, FactorioObjectCellType.NORMAL)
         }
         mainPanel.add(JBScrollPane(list))
         populateTable()

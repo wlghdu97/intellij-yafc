@@ -2,13 +2,12 @@ package com.xhlab.yafc.ide.settings.yafc
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.IconLoader
 import com.intellij.ui.*
-import com.intellij.util.IconUtil
 import com.intellij.util.ui.ColumnInfo
 import com.intellij.util.ui.ListTableModel
 import com.xhlab.yafc.ide.YAFCBundle
-import com.xhlab.yafc.ide.ui.IconCollection
+import com.xhlab.yafc.ide.ui.FactorioObjectCellType
+import com.xhlab.yafc.ide.ui.YAFCFactorioObjectCellRenderer
 import com.xhlab.yafc.model.ProjectPerItemFlag
 import com.xhlab.yafc.model.YAFCProject
 import com.xhlab.yafc.model.YAFCProjectSettings
@@ -55,7 +54,10 @@ class YAFCMilestoneModel private constructor(
     ) : ColumnInfo<YAFCMilestoneDescriptor, FactorioObject>(
         YAFCBundle.message("settings.yafc.milestones.descriptor.name")
     ) {
-        private val milestoneNameRenderer = object : ColoredTableCellRenderer() {
+        private val milestoneNameRenderer = object : ColoredTableCellRenderer(), YAFCFactorioObjectCellRenderer {
+            override val cellType = FactorioObjectCellType.NORMAL
+            override val originalIPad = ipad
+
             override fun customizeCellRenderer(
                 table: JTable,
                 value: Any?,
@@ -65,13 +67,7 @@ class YAFCMilestoneModel private constructor(
                 column: Int
             ) {
                 if (value is FactorioObject) {
-                    append(value.locName, SimpleTextAttributes.REGULAR_ATTRIBUTES, true)
-                    val dataSource = project.service<YAFCProject>().storage?.dataSource
-                    if (dataSource != null) {
-                        icon = IconLoader.createLazy {
-                            IconCollection.getIcon(dataSource, value) ?: IconUtil.getEmptyIcon(false)
-                        }
-                    }
+                    this.customizeCellRenderer(project, value)
                 }
             }
         }

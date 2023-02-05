@@ -5,6 +5,7 @@ import com.intellij.ui.ColorUtil
 import com.intellij.ui.LayeredIcon
 import com.intellij.util.IconUtil
 import com.intellij.util.ui.ImageUtil
+import com.xhlab.yafc.ide.ui.IconCollection.IconSize.Companion.actualSize
 import com.xhlab.yafc.model.data.FactorioIconPart
 import com.xhlab.yafc.model.data.FactorioObject
 import com.xhlab.yafc.model.data.Recipe
@@ -20,39 +21,52 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 
 object IconCollection {
-    private const val ICON_SIZE = 16
-    private const val ICON_SHIFT_UNIT = ICON_SIZE / 32f
+    const val ICON_SIZE = 16
+    const val BIG_ICON_SIZE = ICON_SIZE * 2
 
-    private val smallIconCache = hashMapOf<FactorioIconPart, Icon?>()
-    private val normalIconCache = hashMapOf<FactorioIconPart, Icon?>()
+    private val iconCache = hashMapOf<IconCacheKey, Icon?>()
 
     fun resetIconCache() {
-        smallIconCache.clear()
-        normalIconCache.clear()
+        iconCache.clear()
     }
 
-    fun getSmallIcon(dataSource: FactorioDataSource, obj: FactorioObject): Icon? {
-        return getIcon(dataSource, obj, IconType.SMALL)
+    fun getSmallIcon(
+        dataSource: FactorioDataSource,
+        obj: FactorioObject,
+        size: IconSize = IconSize.NORMAL,
+        gravity: IconGravity = IconGravity.CENTER
+    ): Icon? {
+        return getIcon(dataSource, obj, size, IconZoom.HALF, gravity)
     }
 
     fun getIcon(dataSource: FactorioDataSource, obj: FactorioObject): Icon? {
-        return getIcon(dataSource, obj, IconType.NORMAL)
+        return getIcon(dataSource, obj, IconSize.NORMAL)
     }
 
-    private fun getIcon(dataSource: FactorioDataSource, obj: FactorioObject, iconType: IconType): Icon? {
-        val cache = cacheByType(iconType)
+    fun getBigIcon(dataSource: FactorioDataSource, obj: FactorioObject): Icon? {
+        return getIcon(dataSource, obj, IconSize.BIG)
+    }
+
+    private fun getIcon(
+        dataSource: FactorioDataSource,
+        obj: FactorioObject,
+        size: IconSize,
+        zoom: IconZoom = IconZoom.SAME,
+        gravity: IconGravity = IconGravity.CENTER
+    ): Icon? {
         val iconSpec = obj.iconSpec
         if (iconSpec.isNotEmpty()) {
+            val cacheKey = IconCacheKey(iconSpec[0], size, zoom, gravity)
             val simpleSprite = (iconSpec.size == 1 && iconSpec[0].isSimple())
-            val cachedIcon = cache[iconSpec[0]]
+            val cachedIcon = iconCache[cacheKey]
             if (simpleSprite && cachedIcon != null) {
                 return cachedIcon
             }
 
             return try {
-                val icon = createIconFromSpec(dataSource, iconType, *iconSpec.toTypedArray())
+                val icon = createIconFromSpec(dataSource, size, zoom, gravity, *iconSpec.toTypedArray())
                 if (simpleSprite) {
-                    cache[iconSpec[0]] = icon
+                    iconCache[cacheKey] = icon
                 }
                 icon
             } catch (e: Exception) {
@@ -61,7 +75,7 @@ object IconCollection {
         } else if (obj is Recipe) {
             val mainProduct = obj.mainProduct
             if (mainProduct != null) {
-                return createIconFromSpec(dataSource, iconType, *mainProduct.iconSpec.toTypedArray())
+                return createIconFromSpec(dataSource, size, zoom, gravity, *mainProduct.iconSpec.toTypedArray())
             }
         }
 
@@ -70,29 +84,31 @@ object IconCollection {
 
     private fun createIconFromSpec(
         dataSource: FactorioDataSource,
-        iconType: IconType,
+        size: IconSize,
+        zoom: IconZoom,
+        gravity: IconGravity,
         vararg spec: FactorioIconPart
     ): Icon? {
-        val cache = cacheByType(iconType)
         val images = arrayListOf<Icon>()
         val applyScale = (spec.size > 1)
         for (icon in spec) {
+            val cacheKey = IconCacheKey(icon, size, zoom, gravity)
             val (mod, path) = ApplicationManager.getApplication().runReadAction<Pair<String, String>> {
                 dataSource.resolveModPath("", icon.path)
             }
-            var image = cache[icon]
+            var image = iconCache[cacheKey]
             if (image == null) {
                 val imageSource = ApplicationManager.getApplication().runReadAction<ByteArray?> {
                     dataSource.readModFile(mod, path)
                 }
                 if (imageSource == null) {
-                    cache[icon] = null
+                    iconCache[cacheKey] = null
                 } else {
                     val rawImage = Toolkit.getDefaultToolkit().createImage(imageSource)
                     if (rawImage != null) {
-                        image = rawImage.createIconWithSpec(icon, applyScale, iconType)
+                        image = rawImage.createIconWithSpec(icon, applyScale, size, zoom, gravity)
                     }
-                    cache[icon] = image
+                    iconCache[cacheKey] = image
                 }
             }
             if (image != null) {
@@ -100,7 +116,7 @@ object IconCollection {
             }
         }
 
-        val resizedImages = images.map { IconUtil.resizeSquared(it, ICON_SIZE) }
+        val resizedImages = images.map { IconUtil.resizeSquared(it, size.actualSize) }
         return when (resizedImages.size) {
             0 -> {
                 null
@@ -116,40 +132,53 @@ object IconCollection {
         }
     }
 
-    private fun cacheByType(iconType: IconType) = when (iconType) {
-        IconType.SMALL -> smallIconCache
-        IconType.NORMAL -> normalIconCache
-    }
-
-    private fun Image.createIconWithSpec(spec: FactorioIconPart, applyScale: Boolean, iconType: IconType): Icon {
+    private fun Image.createIconWithSpec(
+        spec: FactorioIconPart,
+        applyScale: Boolean,
+        type: IconSize,
+        zoom: IconZoom = IconZoom.SAME,
+        gravity: IconGravity = IconGravity.CENTER
+    ): Icon {
         val tempIcon = IconUtil.createImageIcon(this)
         val size = min(tempIcon.iconWidth, tempIcon.iconHeight)
-        val scaledImage = ImageUtil.createImage(ICON_SIZE, ICON_SIZE, BufferedImage.TYPE_INT_ARGB).apply {
+        val iconSize = type.actualSize
+        val scaledImage = ImageUtil.createImage(iconSize, iconSize, BufferedImage.TYPE_INT_ARGB).apply {
             createGraphics().apply {
                 val targetSize = if (applyScale) {
-                    (ICON_SIZE * spec.scale).toInt()
+                    (iconSize * spec.scale).toInt()
                 } else {
-                    ICON_SIZE
+                    iconSize
                 }
+                val iconShiftUnit = iconSize / 32f
                 val targetRect = if (spec.x != 0f || spec.y != 0f) {
-                    val targetWidth = (ICON_SHIFT_UNIT * (spec.size * spec.scale)).toInt()
-                    val basePosition = (ICON_SIZE - targetWidth) / 2f
-                    val x = (basePosition + (spec.x * ICON_SHIFT_UNIT)).roundToInt()
-                    val y = (basePosition + (spec.y * ICON_SHIFT_UNIT)).roundToInt()
+                    val targetWidth = (iconShiftUnit * (spec.size * spec.scale)).toInt()
+                    val basePosition = (iconSize - targetWidth) / 2f
+                    val x = (basePosition + (spec.x * iconShiftUnit)).roundToInt()
+                    val y = (basePosition + (spec.y * iconShiftUnit)).roundToInt()
                     Rectangle(x, y, targetWidth, targetWidth)
                 } else {
-                    val basePosition = ((ICON_SIZE - targetSize) / 2f).roundToInt()
+                    val basePosition = ((iconSize - targetSize) / 2f).roundToInt()
                     Rectangle(basePosition, basePosition, targetSize, targetSize)
                 }
 
-                val scaledRect = when (iconType) {
-                    IconType.SMALL -> {
-                        val x = targetRect.x + ((targetRect.centerX - targetRect.x) / 2).roundToInt()
-                        val y = targetRect.y + ((targetRect.centerY - targetRect.y) / 2).roundToInt()
-                        Rectangle(x, y, targetRect.width / 2, targetRect.height / 2)
+                val scaledRect = when (zoom) {
+                    IconZoom.HALF -> {
+                        when (gravity) {
+                            IconGravity.CENTER -> {
+                                val x = targetRect.x + ((targetRect.centerX - targetRect.x) / 2).roundToInt()
+                                val y = targetRect.y + ((targetRect.centerY - targetRect.y) / 2).roundToInt()
+                                Rectangle(x, y, targetRect.width / 2, targetRect.height / 2)
+                            }
+
+                            IconGravity.RIGHT_BOTTOM -> {
+                                val x = targetRect.centerX.toInt()
+                                val y = targetRect.centerY.toInt()
+                                Rectangle(x, y, targetRect.width / 2, targetRect.height / 2)
+                            }
+                        }
                     }
 
-                    IconType.NORMAL -> {
+                    else -> {
                         targetRect
                     }
                 }
@@ -193,7 +222,30 @@ object IconCollection {
         return IconUtil.createImageIcon(filteredImage)
     }
 
-    enum class IconType {
-        SMALL, NORMAL;
+    data class IconCacheKey(
+        val spec: FactorioIconPart,
+        val size: IconSize,
+        val zoom: IconZoom = IconZoom.SAME,
+        val gravity: IconGravity = IconGravity.CENTER
+    )
+
+    enum class IconSize {
+        NORMAL, BIG;
+
+        companion object {
+            val IconSize.actualSize: Int
+                get() = when (this) {
+                    NORMAL -> ICON_SIZE
+                    BIG -> BIG_ICON_SIZE
+                }
+        }
+    }
+
+    enum class IconZoom {
+        HALF, SAME;
+    }
+
+    enum class IconGravity {
+        CENTER, RIGHT_BOTTOM;
     }
 }
