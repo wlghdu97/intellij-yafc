@@ -8,7 +8,6 @@ interface YAFCProjectSettings {
     val miningProductivity: Float
     val reactorSizeX: Float
     val reactorSizeY: Float
-    val firstSync: Boolean
 
     val reactorBonusMultiplier: Float
         get() = 4f - 2f / reactorSizeX - 2f / reactorSizeY

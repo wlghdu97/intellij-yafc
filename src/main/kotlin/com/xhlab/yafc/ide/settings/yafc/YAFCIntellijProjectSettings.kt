@@ -34,13 +34,7 @@ class YAFCIntellijProjectSettings : PersistentStateComponent<Element>, YAFCProje
     @Volatile
     override var reactorSizeY = 2f
 
-    @Volatile
-    override var firstSync: Boolean = true
-
     override fun setMilestones(newMilestones: List<Pair<String, Boolean>>) {
-        if (firstSync) {
-            firstSync = false
-        }
         _milestones.subtract(newMilestones.map { it.first }.toSet()).forEach { itemKey ->
             setFlag(itemKey, EnumSet.noneOf(ProjectPerItemFlag::class.java), false)
         }
@@ -91,7 +85,6 @@ class YAFCIntellijProjectSettings : PersistentStateComponent<Element>, YAFCProje
                 Attribute(MINING_PRODUCTIVITY_TAG_NAME, miningProductivity.toString()),
                 Attribute(REACTOR_SIZE_X_TAG_NAME, reactorSizeX.toString()),
                 Attribute(REACTOR_SIZE_Y_TAG_NAME, reactorSizeY.toString()),
-                Attribute(FIRST_SYNC_TAG_NAME, firstSync.toString())
             )
             setAttributes(attributes)
         }
@@ -113,7 +106,6 @@ class YAFCIntellijProjectSettings : PersistentStateComponent<Element>, YAFCProje
         miningProductivity = state.getAttribute(MINING_PRODUCTIVITY_TAG_NAME)?.floatValue ?: 0f
         reactorSizeX = state.getAttribute(REACTOR_SIZE_X_TAG_NAME)?.floatValue ?: 2f
         reactorSizeY = state.getAttribute(REACTOR_SIZE_Y_TAG_NAME)?.floatValue ?: 2f
-        firstSync = state.getAttribute(FIRST_SYNC_TAG_NAME)?.booleanValue ?: true
     }
 
     companion object {
@@ -127,6 +119,5 @@ class YAFCIntellijProjectSettings : PersistentStateComponent<Element>, YAFCProje
         private const val MINING_PRODUCTIVITY_TAG_NAME = "mining_productivity"
         private const val REACTOR_SIZE_X_TAG_NAME = "reactor_size_x"
         private const val REACTOR_SIZE_Y_TAG_NAME = "reactor_size_y"
-        private const val FIRST_SYNC_TAG_NAME = "first_sync"
     }
 }

@@ -127,6 +127,12 @@ class YAFCProject constructor(private val project: Project) :
                 val analyses = createAndProcessAnalyses(database, dependencies, progress, errorCollector)
                 storage = YAFCStorage(database, dependencies, analyses, dataSource)
 
+                // write newly populated milestones to settings if first sync
+                val milestones = analyses.get<FactorioMilestones>(FactorioAnalysisType.MILESTONES)
+                if (milestones != null) {
+                    writeMilestonesToSettingsIfEmpty(milestones)
+                }
+
                 errorCollector.flush()
                 updateSyncSucceeded()
             }
@@ -156,8 +162,6 @@ class YAFCProject constructor(private val project: Project) :
             registerAnalysis(currentMilestoneCost, listOf(milestones, automation))
             registerAnalysis(technologyScience, listOf(milestones))
             processAnalyses(project.service(), progress, errorCollector)
-            // write newly populated milestones to settings if first sync
-            writeMilestonesToSettingsIfFirstSync(milestones)
         }
     }
 
@@ -172,9 +176,9 @@ class YAFCProject constructor(private val project: Project) :
         })
     }
 
-    private fun writeMilestonesToSettingsIfFirstSync(milestones: FactorioMilestones) {
+    private fun writeMilestonesToSettingsIfEmpty(milestones: FactorioMilestones) {
         val settings = project.service<YAFCProjectSettings>()
-        if (settings.firstSync && settings.milestones.isEmpty()) {
+        if (settings.milestones.isEmpty()) {
             settings.setMilestones(milestones.currentMilestones.map { it.typeDotName to false })
         }
     }

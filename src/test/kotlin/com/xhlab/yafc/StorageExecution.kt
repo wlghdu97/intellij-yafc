@@ -82,7 +82,6 @@ class FakeYAFCProjectSettings : YAFCProjectSettings {
     override val miningProductivity: Float = 0f
     override val reactorSizeX: Float = 2f
     override val reactorSizeY: Float = 2f
-    override val firstSync: Boolean = false
 
     init {
         itemFlags[milestones[0]] = ProjectPerItemFlag.MILESTONE_UNLOCKED.toSet()
