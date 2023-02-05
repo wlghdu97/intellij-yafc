@@ -1,7 +1,7 @@
 plugins {
     id("java")
     id("org.jetbrains.kotlin.jvm") version "1.6.20"
-    id("org.jetbrains.intellij") version "1.5.2"
+    id("org.jetbrains.intellij") version "1.12.0"
 }
 
 group = "com.xhlab"
@@ -19,20 +19,20 @@ dependencies {
 
 intellij {
     type = "IU"
-    version = "2022.1"
+    version = "2022.3"
 }
 
 patchPluginXml {
-    sinceBuild = "221"
-    untilBuild = "222.*"
+    sinceBuild = "223"
+    untilBuild = "231.*"
 }
 
 compileKotlin {
-    kotlinOptions.jvmTarget = "11"
+    kotlinOptions.jvmTarget = "17"
 }
 
 compileTestKotlin {
-    kotlinOptions.jvmTarget = "11"
+    kotlinOptions.jvmTarget = "17"
 }
 
 runIde {

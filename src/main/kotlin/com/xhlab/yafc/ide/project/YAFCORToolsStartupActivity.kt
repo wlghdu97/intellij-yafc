@@ -1,7 +1,7 @@
 package com.xhlab.yafc.ide.project
 
-import com.intellij.openapi.application.PreloadingActivity
-import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.startup.StartupActivity
 import com.sun.jna.Platform
 import java.io.IOException
 import java.net.URI
@@ -9,9 +9,9 @@ import java.net.URISyntaxException
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
 
-class YAFCPreloadActivity : PreloadingActivity() {
+class YAFCORToolsStartupActivity : StartupActivity {
 
-    override fun preload(indicator: ProgressIndicator) {
+    override fun runActivity(project: Project) {
         IntellijORToolsLoader.loadNativeLibraries()
     }
 

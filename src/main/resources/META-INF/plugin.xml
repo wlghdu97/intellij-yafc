@@ -44,8 +44,11 @@
         <editorNotificationProvider
                 implementation="com.xhlab.yafc.ide.notification.YAFCDatabaseSyncNotificationProvider"/>
 
-        <postStartupActivity implementation="com.xhlab.yafc.ide.project.YAFCProjectStartupActivity" order="last"/>
-        <preloadingActivity implementation="com.xhlab.yafc.ide.project.YAFCPreloadActivity"/>
+        <postStartupActivity implementation="com.xhlab.yafc.ide.project.YAFCProjectStartupActivity"
+                             id="yafc"
+                             order="last"/>
+        <postStartupActivity implementation="com.xhlab.yafc.ide.project.YAFCORToolsStartupActivity"
+                             order="before yafc"/>
 
         <projectService serviceInterface="com.xhlab.yafc.model.ErrorCollector"
                         serviceImplementation="com.xhlab.yafc.ide.model.IntellijErrorCollector"/>
