@@ -52,9 +52,11 @@ object FactorioLocalization {
 
         val lastDash = key.lastIndexOf('-')
         val level = key.substring(lastDash + 1).toIntOrNull()
-        val valueWithoutLevel = keys[key.substring(0, lastDash)]
-        if (lastDash != -1 && level != null && valueWithoutLevel != null) {
-            return "$valueWithoutLevel $level"
+        if (lastDash != -1 && level != null) {
+            val valueWithoutLevel = keys[key.substring(0, lastDash)]
+            if (valueWithoutLevel != null) {
+                return "$valueWithoutLevel $level"
+            }
         }
 
         return null
