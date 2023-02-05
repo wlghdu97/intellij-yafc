@@ -3,8 +3,13 @@ package com.xhlab.yafc.model.data
 import com.google.ortools.linearsolver.MPSolver
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.util.MathUtil.clamp
+import com.xhlab.yafc.ide.YAFCBundle
+import com.xhlab.yafc.model.YAFCProjectPreferences
+import com.xhlab.yafc.model.analysis.factorio.FactorioAnalyses
+import com.xhlab.yafc.model.analysis.factorio.FactorioAnalysisType
+import com.xhlab.yafc.model.analysis.factorio.FactorioCostAnalysis
+import com.xhlab.yafc.model.analysis.factorio.FactorioMilestones
 import com.xhlab.yafc.model.util.EnumFlag
-import com.xhlab.yafc.model.util.and
 import com.xhlab.yafc.model.util.value
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
@@ -16,34 +21,29 @@ object DataUtils {
 
     private val logger = Logger.getInstance(DataUtils::class.java)
 
-    val defaultOrdering = FactorioObjectComparer(Comparator<FactorioObject> { x, y ->
-        when {
-            (x == null) -> {
-                if (y == null) 0 else 1
+    fun getDefaultOrdering(analyses: FactorioAnalyses) = FactorioObjectComparer(analyses, Comparator { x, y ->
+        val costAnalysis = analyses.get<FactorioCostAnalysis>(FactorioAnalysisType.COST)
+        if (costAnalysis != null) {
+            val xFlow = costAnalysis.flow[x] ?: 0f
+            val yFlow = costAnalysis.flow[y] ?: 0f
+            if (xFlow != yFlow) {
+                return@Comparator xFlow.compareTo(yFlow)
             }
 
-            (y == null) -> {
-                -1
+            val rx = x as? Recipe
+            val ry = y as? Recipe
+            if (rx != null || ry != null) {
+                val xWaste = costAnalysis.recipeWastePercentage[rx] ?: 0f
+                val yWaste = costAnalysis.recipeWastePercentage[ry] ?: 0f
+                return@Comparator xWaste.compareTo(yWaste)
             }
 
-            else -> x.compareTo(y)
+            val xCost = costAnalysis.cost[x] ?: 0f
+            val yCost = costAnalysis.cost[y] ?: 0f
+            yCost.compareTo(xCost)
+        } else {
+            deterministicComparer.compare(x, y)
         }
-//
-//            val yflow = y.ApproximateFlow()
-//            val xflow = x.ApproximateFlow()
-//            if (xflow != yflow) {
-//                return xflow.CompareTo(yflow)
-//            }
-//
-//            val rx = x as? Recipe
-//            val ry = y as? Recipe
-//            if (rx != null || ry != null) {
-//                val xwaste = rx?.RecipeWaste() ?: 0
-//                val ywaste = ry?.RecipeWaste() ?: 0
-//                return xwaste.compareTo(ywaste)
-//            }
-//
-//            return y.Cost().CompareTo(x.Cost())
     })
 
 //    public static readonly FactorioObjectComparer<Goods> FuelOrdering = new FactorioObjectComparer<Goods>((x, y) =>
@@ -83,10 +83,8 @@ object DataUtils {
         x.temperature.compareTo(y.temperature)
     }
 
-    fun getMilestoneOrder(id: FactorioId): ULong {
-//        val ms = Milestones.Instance
-//        return (ms.milestoneResult[id] - 1) and ms.lockedMask
-        return 0L.toULong()
+    fun getMilestoneOrder(milestones: FactorioMilestones, id: FactorioId): ULong {
+        return ((milestones.milestoneResult[id] ?: 0uL) - 1uL) and milestones.lockedMask
     }
 
     var dataPath = ""
@@ -159,6 +157,7 @@ object DataUtils {
     }
 
     class FactorioObjectComparer<T> constructor(
+        private val analyses: FactorioAnalyses,
         private val similarComparator: Comparator<T>
     ) : Comparator<T> where T : FactorioObject {
 
@@ -172,21 +171,24 @@ object DataUtils {
                     -1
                 }
 
-                else -> x.compareTo(y)
+                (x.specialType != y.specialType) -> {
+                    x.specialType.ordinal - y.specialType.ordinal
+                }
 
-//                (x.specialType != y.specialType) -> {
-//                    x.specialType.ordinal - y.specialType.ordinal
-//                }
-//
-//                else -> {
-//                    val msx = getMilestoneOrder(x.id)
-//                    val msy = getMilestoneOrder(y.id)
-//                    if (msx != msy) {
-//                        msx.compareTo(msy)
-//                    } else {
-//                        similarComparator.compare(x, y)
-//                    }
-//                }
+                else -> {
+                    val milestones = analyses.get<FactorioMilestones>(FactorioAnalysisType.MILESTONES)
+                    if (milestones != null) {
+                        val msx = getMilestoneOrder(milestones, x.id)
+                        val msy = getMilestoneOrder(milestones, y.id)
+                        if (msx != msy) {
+                            msx.compareTo(msy)
+                        } else {
+                            similarComparator.compare(x, y)
+                        }
+                    } else {
+                        similarComparator.compare(x, y)
+                    }
+                }
             }
         }
     }
@@ -459,13 +461,49 @@ object DataUtils {
 
     fun formatAmount(
         amount: Float,
-        unit: UnitOfMeasure,
+        unit: UnitOfMeasure.Plain,
         prefix: String? = null,
         suffix: String? = null,
         precise: Boolean = false
     ): String {
-//        val (multplier, unitSuffix) = Project.current == null ? (1f, null) : Project.current.ResolveUnitOfMeasure(unit)
-        val (multiplier, unitSuffix) = 1f to null
+        val (multiplier, unitSuffix) = resolveUnitOfMeasure(unit)
+        return formatAmountRaw(
+            amount,
+            multiplier,
+            unitSuffix,
+            prefix,
+            suffix,
+            if (precise) preciseFormat else formatSpec
+        )
+    }
+
+    fun formatPerSecondAmount(
+        time: Int,
+        amount: Float,
+        prefix: String? = null,
+        suffix: String? = null,
+        precise: Boolean = false
+    ): String {
+        val (multiplier, unitSuffix) = unitOfTime(time)
+        return formatAmountRaw(
+            amount,
+            multiplier,
+            unitSuffix,
+            prefix,
+            suffix,
+            if (precise) preciseFormat else formatSpec
+        )
+    }
+
+    fun formatAmount(
+        preferences: YAFCProjectPreferences,
+        amount: Float,
+        unit: UnitOfMeasure.Preference,
+        prefix: String? = null,
+        suffix: String? = null,
+        precise: Boolean = false
+    ): String {
+        val (multiplier, unitSuffix) = resolveUnitOfMeasure(preferences, unit)
         return formatAmountRaw(
             amount,
             multiplier,
@@ -562,6 +600,89 @@ object DataUtils {
 //        return true
 //    }
 
+    private fun resolveUnitOfMeasure(unit: UnitOfMeasure.Plain): Pair<Float, String?> {
+        return when (unit) {
+            UnitOfMeasure.Plain.NONE -> {
+                1f to ""
+            }
+
+            UnitOfMeasure.Plain.PERCENT -> {
+                100f to YAFCBundle.message("yafc.suffix.percent")
+            }
+
+            UnitOfMeasure.Plain.SECOND -> {
+                1f to YAFCBundle.message("yafc.suffix.second")
+            }
+
+            UnitOfMeasure.Plain.MEGAWATT -> {
+                1e6f to YAFCBundle.message("yafc.suffix.megawatt")
+            }
+
+            UnitOfMeasure.Plain.MEGAJOULE -> {
+                1e6f to YAFCBundle.message("yafc.suffix.megajoule")
+            }
+
+            UnitOfMeasure.Plain.CELSIUS -> {
+                1f to YAFCBundle.message("yafc.suffix.celsius")
+            }
+        }
+    }
+
+    private fun resolveUnitOfMeasure(
+        preferences: YAFCProjectPreferences,
+        unit: UnitOfMeasure.Preference
+    ): Pair<Float, String> {
+        return when (unit) {
+            UnitOfMeasure.Preference.PER_SECOND -> {
+                unitOfTime(preferences.time)
+            }
+
+            UnitOfMeasure.Preference.ITEM_PER_SECOND -> {
+                itemPerTimeUnit(preferences.time, preferences.itemUnit)
+            }
+
+            UnitOfMeasure.Preference.FLUID_PER_SECOND -> {
+                fluidPerTimeUnit(preferences.time, preferences.fluidUnit)
+            }
+        }
+    }
+
+    fun unitOfTime(time: Int): Pair<Float, String> {
+        return when (time) {
+            0, 1 -> {
+                1f to YAFCBundle.message("yafc.suffix.per.second")
+            }
+
+            60 -> {
+                60f to YAFCBundle.message("yafc.suffix.per.minute")
+            }
+
+            3600 -> {
+                3600f to YAFCBundle.message("yafc.suffix.per.hour")
+            }
+
+            else -> {
+                time.toFloat() to YAFCBundle.message("yafc.suffix.per.custom")
+            }
+        }
+    }
+
+    private fun itemPerTimeUnit(time: Int, itemUnit: Float): Pair<Float, String> {
+        return if (itemUnit == 0f) {
+            return unitOfTime(time)
+        } else {
+            (1f / itemUnit) to YAFCBundle.message("yafc.suffix.item")
+        }
+    }
+
+    private fun fluidPerTimeUnit(time: Int, fluidUnit: Float): Pair<Float, String> {
+        return if (fluidUnit == 0f) {
+            return unitOfTime(time)
+        } else {
+            (1f / fluidUnit) to YAFCBundle.message("yafc.suffix.fluid")
+        }
+    }
+
     private fun writeException(exception: Throwable) {
         logger.error(exception)
     }
@@ -602,14 +723,19 @@ object DataUtils {
     data class Format(val suffix: Char, val multiplier: Float, val formatter: DecimalFormat)
 }
 
-enum class UnitOfMeasure {
-    NONE,
-    PERCENT,
-    SECOND,
-    PER_SECOND,
-    ITEM_PER_SECOND,
-    FLUID_PER_SECOND,
-    MEGAWATT,
-    MEGAJOULE,
-    CELSIUS;
+sealed interface UnitOfMeasure {
+    enum class Plain : UnitOfMeasure {
+        NONE,
+        PERCENT,
+        SECOND,
+        MEGAWATT,
+        MEGAJOULE,
+        CELSIUS;
+    }
+
+    enum class Preference : UnitOfMeasure {
+        PER_SECOND,
+        ITEM_PER_SECOND,
+        FLUID_PER_SECOND;
+    }
 }

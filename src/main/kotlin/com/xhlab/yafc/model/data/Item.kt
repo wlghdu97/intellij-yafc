@@ -9,5 +9,5 @@ sealed class Item : Goods {
     final override val isPower: Boolean = false
     final override val type: String = "Item"
     final override val sortingOrder: FactorioObjectSortOrder = FactorioObjectSortOrder.ITEMS
-    final override val flowUnitOfMeasure: UnitOfMeasure = UnitOfMeasure.ITEM_PER_SECOND
+    final override val flowUnitOfMeasure: UnitOfMeasure = UnitOfMeasure.Preference.ITEM_PER_SECOND
 }

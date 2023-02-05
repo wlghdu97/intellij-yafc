@@ -281,7 +281,7 @@ class FactorioCostAnalysis constructor(
             logger.info(
                 "Estimated modpack cost: " + DataUtils.formatAmount(
                     objectiveValue.toFloat() * 1000f,
-                    UnitOfMeasure.NONE
+                    UnitOfMeasure.Plain.NONE
                 )
             )
             for (g in db.goods.all) {
@@ -409,7 +409,7 @@ class FactorioCostAnalysis constructor(
         }
         return DataUtils.formatAmount(
             itemFlow * 1000f,
-            UnitOfMeasure.NONE,
+            UnitOfMeasure.Plain.NONE,
             "Estimated amount for all researches: "
         )
     }

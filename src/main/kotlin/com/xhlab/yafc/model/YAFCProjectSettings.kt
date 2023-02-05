@@ -6,8 +6,8 @@ interface YAFCProjectSettings {
     val milestones: List<String>
     val itemFlags: SortedMap<String, ProjectPerItemFlags>
     val miningProductivity: Float
-    val reactorSizeX: Float
-    val reactorSizeY: Float
+    var reactorSizeX: Float
+    var reactorSizeY: Float
 
     val reactorBonusMultiplier: Float
         get() = 4f - 2f / reactorSizeX - 2f / reactorSizeY

@@ -13,7 +13,6 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
-import com.intellij.ui.AppUIUtil
 import com.intellij.util.messages.Topic
 import com.xhlab.yafc.ide.YAFCBundle
 import com.xhlab.yafc.ide.notification.IntellijProgressTextIndicator
@@ -132,6 +131,7 @@ class YAFCProject constructor(private val project: Project) :
                 if (milestones != null) {
                     writeMilestonesToSettingsIfEmpty(milestones)
                 }
+                setDefaultsToPreferencesIfNull(database)
 
                 errorCollector.flush()
                 updateSyncSucceeded()
@@ -183,9 +183,18 @@ class YAFCProject constructor(private val project: Project) :
         }
     }
 
+    private fun setDefaultsToPreferencesIfNull(db: YAFCDatabase) {
+        val pref = project.service<YAFCProjectPreferences>()
+        if (pref.defaultBelt == null) {
+            pref.defaultBelt = db.allBelts.minBy { it.beltItemsPerSecond }
+        }
+        if (pref.defaultInserter == null) {
+            pref.defaultInserter = db.allInserters.sortedBy { it.energy?.type }.minBy { 1f / it.inserterSwingTime }
+        }
+    }
+
     private fun syncPublisher(block: YAFCSyncListener.() -> Unit) {
-        val runnable = { block.invoke(project.messageBus.syncPublisher(YAFC_SYNC_TOPIC)) }
-        AppUIUtil.invokeLaterIfProjectAlive(project, runnable)
+        block.invoke(project.messageBus.syncPublisher(YAFC_SYNC_TOPIC))
     }
 
     private fun updateSyncStarted() {

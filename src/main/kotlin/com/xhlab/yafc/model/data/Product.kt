@@ -19,13 +19,13 @@ sealed class Product : IFactorioObjectWrapper {
         get() {
             var text = goods.locName
             if (amountMin != 1f || amountMax != 1f) {
-                text = DataUtils.formatAmount(amountMax, UnitOfMeasure.NONE) + "x " + text
+                text = DataUtils.formatAmount(amountMax, UnitOfMeasure.Plain.NONE) + "x " + text
                 if (amountMin != amountMax) {
-                    text = DataUtils.formatAmount(amountMin, UnitOfMeasure.NONE) + "-" + text
+                    text = DataUtils.formatAmount(amountMin, UnitOfMeasure.Plain.NONE) + "-" + text
                 }
             }
             if (probability != 1f) {
-                text = DataUtils.formatAmount(probability, UnitOfMeasure.PERCENT) + " " + text
+                text = DataUtils.formatAmount(probability, UnitOfMeasure.Plain.PERCENT) + " " + text
             }
 
             return text

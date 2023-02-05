@@ -6,5 +6,5 @@ sealed class Special : Goods {
     final override val type: String
         get() = if (isPower) "Power" else "Special"
     final override val sortingOrder: FactorioObjectSortOrder = FactorioObjectSortOrder.SPECIAL_GOODS
-    final override val flowUnitOfMeasure: UnitOfMeasure = UnitOfMeasure.PER_SECOND
+    final override val flowUnitOfMeasure: UnitOfMeasure = UnitOfMeasure.Preference.PER_SECOND
 }

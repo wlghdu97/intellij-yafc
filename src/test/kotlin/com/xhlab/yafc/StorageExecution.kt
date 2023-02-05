@@ -80,8 +80,8 @@ class FakeYAFCProjectSettings : YAFCProjectSettings {
     )
     override val itemFlags: SortedMap<String, ProjectPerItemFlags> = TreeMap() // TODO: add comparator
     override val miningProductivity: Float = 0f
-    override val reactorSizeX: Float = 2f
-    override val reactorSizeY: Float = 2f
+    override var reactorSizeX: Float = 2f
+    override var reactorSizeY: Float = 2f
 
     init {
         itemFlags[milestones[0]] = ProjectPerItemFlag.MILESTONE_UNLOCKED.toSet()
