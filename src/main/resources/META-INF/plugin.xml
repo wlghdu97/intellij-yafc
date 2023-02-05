@@ -79,6 +79,11 @@
                 serviceImplementation="com.xhlab.yafc.ide.settings.factorio.path.FactorioPathManager"/>
         <applicationService
                 serviceImplementation="com.xhlab.yafc.ide.settings.factorio.modpath.FactorioModPathManager"/>
+
+        <!-- YAFC Tool Windows -->
+        <toolWindow id="YAFCFactorioObjectBrowser"
+                    factoryClass="com.xhlab.yafc.ide.ui.YAFCFactorioObjectBrowserToolWindowFactory"
+                    anchor="right"/>
     </extensions>
 
     <projectListeners>
