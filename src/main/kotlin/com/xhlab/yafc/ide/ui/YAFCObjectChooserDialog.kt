@@ -20,12 +20,15 @@ import javax.swing.ListSelectionModel
 import javax.swing.event.DocumentEvent
 
 class YAFCObjectChooserDialog constructor(
-    private val project: Project,
+    project: Project,
     targetObject: String,
     private val objectList: List<FactorioObject>,
     private val excluded: Set<FactorioObject>,
     canSelectMultiple: Boolean = false
 ) : DialogWrapper(project), YAFCObjectChooser {
+    private val searchField = SearchTextField()
+    private val speedSearch = SpeedSearch(true)
+
     private val mainPanel = JPanel(BorderLayout())
     private val list = JBList<FactorioObject>().apply {
         selectionMode = if (canSelectMultiple) {
@@ -35,9 +38,15 @@ class YAFCObjectChooserDialog constructor(
         }
     }
     private val listModel = DefaultListModel<FactorioObject>()
-
-    private val searchField = SearchTextField()
-    private val speedSearch = SpeedSearch(true)
+    private val filteringListModel = NameFilteringListModel(
+        listModel,
+        { it.locName },
+        speedSearch::shouldBeShowing,
+        { StringUtil.notNullize(speedSearch.filter) }
+    )
+    private val renderer = YAFCFactorioObjectListCellRenderer(project, FactorioObjectCellType.NORMAL)
+    private val listMouseAdapter = FactorioObjectMouseAdapter(project, list, renderer, filteringListModel, true)
+    private val scrollPane = JBScrollPane(list)
 
     init {
         title = YAFCBundle.message("yafc.object.chooser.title", targetObject)
@@ -61,12 +70,7 @@ class YAFCObjectChooserDialog constructor(
                 speedSearch.updatePattern(e.document.getText(0, e.document.length))
             }
         })
-        val filteringListModel = NameFilteringListModel(
-            listModel,
-            { it.locName },
-            speedSearch::shouldBeShowing,
-            { StringUtil.notNullize(speedSearch.filter) }
-        )
+
         speedSearch.addChangeListener {
             filteringListModel.refilter()
         }
@@ -75,9 +79,17 @@ class YAFCObjectChooserDialog constructor(
         with(list) {
             emptyText.text = "DB Sync is not done"
             model = filteringListModel
-            cellRenderer = YAFCFactorioObjectListCellRenderer(project, FactorioObjectCellType.NORMAL)
+            cellRenderer = renderer
+
+            addMouseListener(listMouseAdapter)
+            addMouseMotionListener(listMouseAdapter)
         }
-        mainPanel.add(JBScrollPane(list))
+        mainPanel.add(scrollPane.apply {
+            verticalScrollBar.addAdjustmentListener {
+                listMouseAdapter.hideCurrentTooltip()
+            }
+        })
+
         populateTable()
 
         return mainPanel
