@@ -76,8 +76,8 @@ object DataUtils {
 //    public static FavouritesComparer<Goods> FavouriteFuel { get private set }
 //    public static FavouritesComparer<EntityCrafter> FavouriteCrafter { get private set }
 //    public static FavouritesComparer<Item> FavouriteModule { get private set }
-//
-//    public static readonly IComparer<FactorioObject> DeterministicComparer = new FactorioObjectDeterministicComparer()
+
+    val deterministicComparer: Comparator<FactorioObject> = FactorioObjectDeterministicComparer()
 
     internal val fluidTemperatureComparer = Comparator<Fluid> { x, y ->
         x.temperature.compareTo(y.temperature)
@@ -139,12 +139,24 @@ object DataUtils {
 //        FavouriteCrafter = new FavouritesComparer<EntityCrafter>(project, CrafterOrdering)
 //        FavouriteModule = new FavouritesComparer<Item>(project, DefaultOrdering)
 //    }
-//
-//    private class FactorioObjectDeterministicComparer : IComparer<FactorioObject>
-//    {
-//        public int Compare(FactorioObject x, FactorioObject y) => x.id.CompareTo(y.id) // id comparison is deterministic because objects are sorted deterministicaly
-//    }
-//
+
+    private class FactorioObjectDeterministicComparer : Comparator<FactorioObject> {
+        override fun compare(x: FactorioObject?, y: FactorioObject?): Int {
+            return when {
+                (x == null) -> {
+                    if (y == null) 0 else 1
+                }
+
+                (y == null) -> {
+                    -1
+                }
+
+                else -> {
+                    x.id.compareTo(y.id) // id comparison is deterministic because objects are sorted deterministically
+                }
+            }
+        }
+    }
 
     class FactorioObjectComparer<T> constructor(
         private val similarComparator: Comparator<T>

@@ -33,6 +33,6 @@ sealed interface FactorioObject : IFactorioObjectWrapper, Comparable<FactorioObj
     fun getDependencies(collector: IDependencyCollector, temp: MutableList<FactorioObject>)
 
     override fun compareTo(other: FactorioObject): Int {
-        return DataUtils.defaultOrdering.compare(this, other)
+        return DataUtils.deterministicComparer.compare(this, other)
     }
 }
