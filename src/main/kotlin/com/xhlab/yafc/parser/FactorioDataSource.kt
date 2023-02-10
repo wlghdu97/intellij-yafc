@@ -261,9 +261,6 @@ class FactorioDataSource constructor(
         val postprocess = javaClass.getResourceAsStream("/data/Postprocess.lua")?.readBytes()
             ?: throw RuntimeException("Postprocess.lua not found from resources")
 
-        DataUtils.allMods = modLoadOrder
-        DataUtils.dataPath = factorioDataPath
-        DataUtils.modsPath = modPath
         DataUtils.expensiveRecipes = expensive
 
         val dataContext = LuaContext(this, allMods, factorioDataPath, yafcVersion, logger)

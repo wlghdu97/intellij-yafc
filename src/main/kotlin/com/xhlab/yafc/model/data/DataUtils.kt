@@ -87,10 +87,7 @@ object DataUtils {
         return ((milestones.milestoneResult[id] ?: 0uL) - 1uL) and milestones.lockedMask
     }
 
-    var dataPath = ""
-    var modsPath = ""
     var expensiveRecipes = false
-    var allMods: Array<String> = emptyArray()
 
     val random = Random()
 
